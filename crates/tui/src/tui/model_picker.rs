@@ -14,7 +14,7 @@
 //!
 //! On apply we emit a [`ViewEvent::ModelPickerApplied`] with the resolved
 //! model id and effort tier; the UI handler updates `App` state, persists
-//! the choice via [`Settings`], and forwards `Op::SetModel` so the running
+//! the choice via `Settings`, and forwards `Op::SetModel` so the running
 //! engine picks up the change without a restart.
 
 use crossterm::event::{KeyCode, KeyEvent};
