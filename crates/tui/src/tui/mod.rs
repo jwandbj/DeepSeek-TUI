@@ -22,6 +22,7 @@ pub mod scrolling;
 pub mod selection;
 pub mod session_picker;
 pub mod sidebar;
+pub mod slash_menu;
 pub mod streaming;
 pub mod transcript;
 pub mod ui;

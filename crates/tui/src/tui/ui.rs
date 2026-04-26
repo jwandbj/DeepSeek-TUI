@@ -76,10 +76,13 @@ use super::history::{
     ViewImageCell, WebSearchCell, history_cells_from_message, summarize_mcp_output,
     summarize_tool_args, summarize_tool_output,
 };
+use super::slash_menu::{
+    apply_slash_menu_selection, try_autocomplete_slash_command, visible_slash_menu_entries,
+};
 use super::views::{ConfigView, HelpView, ModalKind, ViewEvent};
 use super::widgets::{
     ChatWidget, ComposerWidget, FooterProps, FooterToast, FooterWidget, HeaderData, HeaderWidget,
-    Renderable, slash_completion_hints,
+    Renderable,
 };
 
 // === Constants ===
@@ -1529,78 +1532,6 @@ fn apply_alt_4_shortcut(app: &mut App, modifiers: KeyModifiers) {
     } else {
         app.set_mode(AppMode::Plan);
     }
-}
-
-fn visible_slash_menu_entries(app: &App, limit: usize) -> Vec<String> {
-    if app.slash_menu_hidden {
-        return Vec::new();
-    }
-    slash_completion_hints(&app.input, limit)
-}
-
-fn apply_slash_menu_selection(app: &mut App, entries: &[String], append_space: bool) -> bool {
-    if entries.is_empty() {
-        return false;
-    }
-
-    let selected_idx = app.slash_menu_selected.min(entries.len().saturating_sub(1));
-    let mut command = entries[selected_idx].clone();
-
-    if append_space
-        && !command.ends_with(' ')
-        && !command.contains(char::is_whitespace)
-        && let Some(info) = commands::get_command_info(command.trim_start_matches('/'))
-        && (info.usage.contains('<') || info.usage.contains('['))
-    {
-        command.push(' ');
-    }
-
-    app.input = command;
-    app.cursor_position = app.input.chars().count();
-    app.slash_menu_hidden = false;
-    app.status_message = Some(format!("Command selected: {}", app.input.trim_end()));
-    true
-}
-
-fn try_autocomplete_slash_command(app: &mut App) -> bool {
-    if !app.input.starts_with('/') || app.input.contains(char::is_whitespace) {
-        return false;
-    }
-
-    let prefix = app.input.trim_start_matches('/');
-    let matches = commands::commands_matching(prefix);
-    if matches.is_empty() {
-        return false;
-    }
-
-    let names = matches.iter().map(|info| info.name).collect::<Vec<_>>();
-    let shared = crate::tui::file_mention::longest_common_prefix(&names);
-
-    if !shared.is_empty() && shared.len() > prefix.len() {
-        app.input = format!("/{shared}");
-        app.cursor_position = app.input.chars().count();
-        app.slash_menu_hidden = false;
-        app.status_message = Some(format!("Autocomplete: /{shared}"));
-        return true;
-    }
-
-    if matches.len() == 1 {
-        let completed = format!("/{} ", matches[0].name);
-        app.input = completed.clone();
-        app.cursor_position = completed.chars().count();
-        app.slash_menu_hidden = false;
-        app.status_message = Some(format!("Command completed: {}", completed.trim_end()));
-        return true;
-    }
-
-    let preview = matches
-        .iter()
-        .take(5)
-        .map(|info| format!("/{}", info.name))
-        .collect::<Vec<_>>()
-        .join(", ");
-    app.status_message = Some(format!("Suggestions: {preview}"));
-    true
 }
 
 async fn fetch_available_models(config: &Config) -> Result<Vec<String>> {
