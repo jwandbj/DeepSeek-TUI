@@ -95,7 +95,11 @@ const CONTEXT_WARNING_THRESHOLD_PERCENT: f64 = 85.0;
 const CONTEXT_CRITICAL_THRESHOLD_PERCENT: f64 = 95.0;
 const UI_IDLE_POLL_MS: u64 = 48;
 const UI_ACTIVE_POLL_MS: u64 = 24;
-const UI_STATUS_ANIMATION_MS: u64 = 360;
+// Forced repaint cadence while a turn is live (model loading, compacting,
+// sub-agents running). Drives the footer water-spout animation as well as
+// the per-tool spinner pulse — keep this fast enough that the spout reads as
+// motion (~12 fps) instead of teleport-frames.
+const UI_STATUS_ANIMATION_MS: u64 = 80;
 const WORKSPACE_CONTEXT_REFRESH_SECS: u64 = 15;
 const SIDEBAR_VISIBLE_MIN_WIDTH: u16 = 100;
 
@@ -3068,7 +3072,7 @@ fn render_footer(f: &mut Frame, area: Rect, app: &mut App) {
         Vec::new()
     };
 
-    let props = FooterProps::from_app(
+    let mut props = FooterProps::from_app(
         app,
         toast,
         state_label,
@@ -3079,9 +3083,33 @@ fn render_footer(f: &mut Frame, area: Rect, app: &mut App) {
         cache,
         cost,
     );
+
+    // Animate the spacer between the left status line and the right-hand
+    // chips whenever a turn is live: model loading/streaming, compacting, or
+    // sub-agents in flight. Honors the `low_motion` setting — calm terminals
+    // get the plain whitespace gap. Frame counter ticks every 80 ms; the
+    // renderer is deterministic given the frame, so tests can pin specific
+    // frames. Computed independently of `state_label` so removing the
+    // "thinking" text label doesn't kill the visual signal.
+    if !app.low_motion && footer_working_strip_active(app) {
+        let frame = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64 / 80)
+            .unwrap_or(0);
+        props.working_strip_frame = Some(frame);
+    }
+
     let widget = FooterWidget::new(props);
     let buf = f.buffer_mut();
     widget.render(area, buf);
+}
+
+/// Whether the footer should animate the water-spout strip. Driven by the
+/// underlying live-work flags (model loading, compacting, sub-agents) rather
+/// than a stringly-typed status label, so adding or removing labels never
+/// silently disables the animation.
+fn footer_working_strip_active(app: &App) -> bool {
+    app.is_loading || app.is_compacting || running_agent_count(app) > 0
 }
 
 /// Test-only helper retained as a parity reference for `FooterWidget`'s
@@ -3257,9 +3285,12 @@ fn footer_state_label(app: &App) -> (&'static str, ratatui::style::Color) {
     if app.is_compacting {
         return ("compacting \u{238B}", palette::STATUS_WARNING);
     }
-    if app.is_loading {
-        return ("thinking \u{238B}", palette::STATUS_WARNING);
-    }
+    // Note: we deliberately do NOT show a "thinking" label for `is_loading`.
+    // The animated water-spout strip in the footer's spacer is the visual
+    // signal that the model is live; "thinking" was misleading because it
+    // fired for every kind of in-flight work (tool calls, streaming, etc.),
+    // not strictly reasoning. Sub-agents still surface "working" because
+    // that's a distinct lifecycle the user can act on (open `/agents`).
     if running_agent_count(app) > 0 {
         return ("working", palette::DEEPSEEK_SKY);
     }
@@ -4276,6 +4307,7 @@ fn handle_tool_call_started(app: &mut App, id: &str, name: &str, input: &serde_j
     }
 
     let input_summary = summarize_tool_args(input);
+    let prompts = extract_fanout_prompts(name, input);
     push_active_tool_cell(
         app,
         &id,
@@ -4286,8 +4318,33 @@ fn handle_tool_call_started(app: &mut App, id: &str, name: &str, input: &serde_j
             status: ToolStatus::Running,
             input_summary,
             output: None,
+            prompts,
         })),
     );
+}
+
+/// Extract per-child prompts from a fan-out tool's input. For `rlm_query` the
+/// renderer shows one row per child instead of an inline JSON summary so the
+/// user can read what each child was asked. Returns `None` for tools that
+/// don't expose a prompt list.
+fn extract_fanout_prompts(name: &str, input: &serde_json::Value) -> Option<Vec<String>> {
+    if name != "rlm_query" {
+        return None;
+    }
+    if let Some(arr) = input.get("prompts").and_then(|v| v.as_array()) {
+        let prompts: Vec<String> = arr
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect();
+        if prompts.is_empty() {
+            return None;
+        }
+        return Some(prompts);
+    }
+    if let Some(s) = input.get("prompt").and_then(|v| v.as_str()) {
+        return Some(vec![s.to_string()]);
+    }
+    None
 }
 
 /// Push a tool cell as a new entry in `active_cell`, register the tool id,
@@ -4585,6 +4642,7 @@ fn push_orphan_tool_completion(
         status,
         input_summary: None,
         output,
+        prompts: None,
     })));
     let cell_index = app.history.len().saturating_sub(1);
     app.tool_details_by_cell.insert(

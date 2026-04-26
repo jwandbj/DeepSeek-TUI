@@ -1450,10 +1450,11 @@ impl Engine {
         if self.config.features.enabled(Feature::WebSearch) {
             builder = builder.with_web_tools();
         }
-        if self.config.features.enabled(Feature::ShellTool)
-            && self.session.allow_shell
-            && mode != AppMode::Plan
-        {
+        // Plan mode now keeps shell available — the existing approval flow
+        // and command-safety classifier gate destructive commands. Writes
+        // and patches stay blocked above; that's the only "destructive"
+        // boundary plan mode enforces by tool registration.
+        if self.config.features.enabled(Feature::ShellTool) && self.session.allow_shell {
             builder = builder.with_shell_tools();
         }
 

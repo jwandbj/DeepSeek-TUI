@@ -1526,6 +1526,7 @@ mod tests {
             status: ToolStatus::Success,
             input_summary: Some("items: <2 items>".to_string()),
             output: Some("hello world ".repeat(420)),
+            prompts: None,
         }));
         for width in [40u16, 80, 111, 165] {
             let lines = cell.lines(width);
@@ -1568,6 +1569,7 @@ mod tests {
                 status: ToolStatus::Success,
                 input_summary: Some("todos: <1 items>".to_string()),
                 output: Some(output),
+                prompts: None,
             })));
 
             let height: u16 = 30;

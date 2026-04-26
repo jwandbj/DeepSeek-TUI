@@ -24,9 +24,7 @@
 //! cell and re-runs only the render step on width changes. That makes resize a
 //! re-flow operation rather than a re-parse + re-flow operation.
 
-use std::sync::Arc;
-
-#[cfg(any(test, feature = "perf-counters"))]
+#[cfg(test)]
 use std::cell::Cell;
 
 use ratatui::style::{Modifier, Style};
@@ -37,21 +35,20 @@ use crate::palette;
 
 // Thread-local counter incremented every time `parse` runs. Used by tests to
 // prove that width-only changes hit the cached-AST path and skip parsing.
-// Available in test builds and behind the `perf-counters` feature flag so
-// release builds pay no cost. Thread-local (not global atomic) so concurrent
-// tests calling `parse()` can't pollute each other's counters.
-#[cfg(any(test, feature = "perf-counters"))]
+// Thread-local (not global atomic) so concurrent tests calling `parse()` can't
+// pollute each other's counters.
+#[cfg(test)]
 thread_local! {
     static PARSE_INVOCATIONS: Cell<u64> = const { Cell::new(0) };
 }
 
-#[cfg(any(test, feature = "perf-counters"))]
+#[cfg(test)]
 #[must_use]
 pub fn parse_invocation_count() -> u64 {
     PARSE_INVOCATIONS.with(|c| c.get())
 }
 
-#[cfg(any(test, feature = "perf-counters"))]
+#[cfg(test)]
 pub fn reset_parse_invocation_count() {
     PARSE_INVOCATIONS.with(|c| c.set(0));
 }
@@ -87,20 +84,6 @@ pub struct ParsedMarkdown {
     blocks: Vec<Block>,
 }
 
-impl ParsedMarkdown {
-    /// Borrow the parsed blocks (mostly useful for tests).
-    #[must_use]
-    pub fn blocks(&self) -> &[Block] {
-        &self.blocks
-    }
-
-    /// Whether the parse was empty (no source at all).
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.blocks.is_empty()
-    }
-}
-
 /// Parse markdown source into a width-independent block AST.
 ///
 /// This is a small line-oriented parser tuned for the patterns we render:
@@ -110,7 +93,7 @@ impl ParsedMarkdown {
 /// classify as `Block::Paragraph`.
 #[must_use]
 pub fn parse(content: &str) -> ParsedMarkdown {
-    #[cfg(any(test, feature = "perf-counters"))]
+    #[cfg(test)]
     PARSE_INVOCATIONS.with(|c| c.set(c.get() + 1));
 
     let mut blocks = Vec::new();
@@ -234,16 +217,6 @@ pub fn render_parsed(parsed: &ParsedMarkdown, width: u16, base_style: Style) -> 
 pub fn render_markdown(content: &str, width: u16, base_style: Style) -> Vec<Line<'static>> {
     let parsed = parse(content);
     render_parsed(&parsed, width, base_style)
-}
-
-/// Cache-friendly parsed AST for [`HistoryCell`] rendering.
-///
-/// Wraps the `ParsedMarkdown` in `Arc` so the transcript cache can hand the
-/// same parse to many render passes (e.g. across spacers / overlays) without
-/// reallocation.
-#[must_use]
-pub fn parse_arc(content: &str) -> Arc<ParsedMarkdown> {
-    Arc::new(parse(content))
 }
 
 fn parse_heading(line: &str) -> Option<(usize, &str)> {
@@ -514,7 +487,7 @@ mod tests {
     #[test]
     fn fenced_code_block_collected_in_parse() {
         let parsed = parse("text\n```\ncode line one\ncode line two\n```\nmore\n");
-        let blocks = parsed.blocks();
+        let blocks = &parsed.blocks;
         // text paragraph, two code lines, more paragraph (fences are dropped)
         let code_lines: Vec<_> = blocks
             .iter()
@@ -530,7 +503,7 @@ mod tests {
     fn ordered_and_unordered_list_items_parse() {
         let parsed = parse("- alpha\n* beta\n1. gamma\n");
         let items: Vec<_> = parsed
-            .blocks()
+            .blocks
             .iter()
             .filter_map(|b| match b {
                 Block::ListItem { bullet, text } => Some((bullet.as_str(), text.as_str())),

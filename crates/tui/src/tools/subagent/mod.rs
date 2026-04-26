@@ -1011,7 +1011,8 @@ impl ToolSpec for AgentSpawnTool {
     }
 
     fn description(&self) -> &'static str {
-        "Spawn a background sub-agent to handle a focused task. Returns an agent_id immediately; follow with agent_result to retrieve the result."
+        "Spawn a background sub-agent for a focused task. Returns an agent_id immediately; \
+         follow with agent_result to retrieve the final result."
     }
 
     fn input_schema(&self) -> Value {
@@ -1136,7 +1137,8 @@ impl ToolSpec for AgentResultTool {
     }
 
     fn description(&self) -> &'static str {
-        "Get the latest status or final result for a sub-agent."
+        "Get the latest status or final result for a sub-agent. Set `block: true` to wait until the \
+         agent reaches a terminal state (respects `timeout_ms`)."
     }
 
     fn input_schema(&self) -> Value {
@@ -1224,7 +1226,7 @@ impl ToolSpec for AgentCancelTool {
     }
 
     fn description(&self) -> &'static str {
-        "Cancel a running sub-agent."
+        "Cancel a running sub-agent. Returns the final snapshot with the cancelled status."
     }
 
     fn input_schema(&self) -> Value {
@@ -1411,7 +1413,8 @@ impl ToolSpec for AgentListTool {
     }
 
     fn description(&self) -> &'static str {
-        "List all active and completed sub-agents with their status."
+        "List all active and recently completed sub-agents with their status, type, assignment, \
+         steps taken, and duration."
     }
 
     fn input_schema(&self) -> Value {
@@ -1458,7 +1461,7 @@ impl ToolSpec for AgentSendInputTool {
     }
 
     fn description(&self) -> &'static str {
-        "Send input to a running sub-agent."
+        "Send input to a running sub-agent. Returns the agent's current snapshot after delivery."
     }
 
     fn input_schema(&self) -> Value {
@@ -1542,7 +1545,9 @@ impl ToolSpec for AgentAssignTool {
     }
 
     fn description(&self) -> &'static str {
-        "Update a sub-agent assignment and optionally send an immediate instruction."
+        "Update a sub-agent's assignment (objective, role) and optionally deliver an immediate \
+         coordinator note. The update is delivered as a high-priority message when `interrupt` is \
+         true (the default). Returns the agent's current snapshot."
     }
 
     fn input_schema(&self) -> Value {
@@ -1634,7 +1639,9 @@ impl ToolSpec for AgentWaitTool {
     }
 
     fn description(&self) -> &'static str {
-        "Wait for one or more sub-agents to reach a terminal status."
+        "Wait for one or more sub-agents to reach a terminal status. Use `wait_mode: \"all\"` to block \
+         until every listed agent finishes, or `wait_mode: \"any\"` (default) to return as soon as \
+         one finishes. When no ids are given, waits on all currently running sub-agents."
     }
 
     fn input_schema(&self) -> Value {
@@ -1777,7 +1784,8 @@ impl ToolSpec for DelegateToAgentTool {
     }
 
     fn description(&self) -> &'static str {
-        "Delegate a task to a specialized sub-agent. This is an alias for agent_spawn."
+        "Delegate a task to a specialized sub-agent. This is an alias for agent_spawn — same schema, \
+         same behavior. Use `type` (or `agent_name`, `agent_type`) to pick the agent flavor."
     }
 
     fn input_schema(&self) -> Value {

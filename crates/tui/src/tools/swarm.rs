@@ -281,7 +281,9 @@ impl ToolSpec for AgentSwarmTool {
     }
 
     fn description(&self) -> &'static str {
-        "Spawn multiple sub-agents with optional dependencies and aggregate their results."
+        "Spawn multiple sub-agents in parallel, each with their own tools and optional task \
+         dependencies, and aggregate their results. Returns a swarm_id; results come back via \
+         swarm_result or wait."
     }
 
     fn input_schema(&self) -> Value {
@@ -463,7 +465,8 @@ impl ToolSpec for SwarmStatusTool {
     }
 
     fn description(&self) -> &'static str {
-        "Get the latest status for a previously spawned swarm."
+        "Get the latest status snapshot for a previously spawned swarm — status, task counts, \
+         and elapsed duration, without pulling full per-task results."
     }
 
     fn input_schema(&self) -> Value {
@@ -517,7 +520,8 @@ impl ToolSpec for SwarmResultTool {
     }
 
     fn description(&self) -> &'static str {
-        "Get full outcomes for a previously spawned swarm."
+        "Get full outcomes for a previously spawned swarm. Use `block: true` to wait for completion; \
+         returns task-level results, durations, errors, and aggregated counts."
     }
 
     fn input_schema(&self) -> Value {

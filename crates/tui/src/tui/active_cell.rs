@@ -353,6 +353,7 @@ mod tests {
             status: ToolStatus::Running,
             input_summary: None,
             output: None,
+            prompts: None,
         }))
     }
 

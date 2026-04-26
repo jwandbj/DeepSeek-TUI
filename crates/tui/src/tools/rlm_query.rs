@@ -5,10 +5,13 @@
 //! the joined result.
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Instant;
 
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use serde_json::{Value, json};
+use tracing::debug;
 
 use crate::client::DeepSeekClient;
 use crate::llm_client::LlmClient;
@@ -49,12 +52,11 @@ impl ToolSpec for RlmQueryTool {
     }
 
     fn description(&self) -> &'static str {
-        "Run one or more prompts in parallel against the fast cheap model (deepseek-v4-flash). \
-         Use for fan-out analysis, batched review, or cheap parallel decomposition: pass `prompts` \
-         as an array to run them concurrently, or `prompt` for a single call. Each child runs \
-         in isolation with its own (optional) system prompt; results come back as `[i] <text>` \
-         joined blocks (or just the text when there's one prompt). Cheaper than spawning sub-agents \
-         for read-only reasoning work."
+        "Run up to 16 prompts concurrently against the fast cheap model (deepseek-v4-flash) \
+         and return the joined results. Pass `prompts: [...]` for a parallel batch or \
+         `prompt` for a single child. Children run in isolation with an optional shared \
+         `system` prompt; results come back as `[i] <text>` blocks separated by `---` (or \
+         just the text for N=1). Read-only — no file or shell side-effects."
     }
 
     fn input_schema(&self) -> Value {
@@ -142,12 +144,33 @@ impl ToolSpec for RlmQueryTool {
         let client = Arc::new(client);
         let model = Arc::new(model);
         let system = Arc::new(system);
+        let total = prompts.len();
+        // Tracks the peak concurrent in-flight child count for this fan-out.
+        // Useful as evidence that join_all actually overlaps requests rather
+        // than walking through them serially. Surfaces in `RUST_LOG=
+        // deepseek_cli::tools=debug` as the `peak` field of the summary log.
+        let in_flight = Arc::new(AtomicUsize::new(0));
+        let peak = Arc::new(AtomicUsize::new(0));
+        let dispatch_started = Instant::now();
 
         let futures = prompts.into_iter().enumerate().map(|(idx, prompt)| {
             let client = Arc::clone(&client);
             let model = Arc::clone(&model);
             let system = Arc::clone(&system);
+            let in_flight = Arc::clone(&in_flight);
+            let peak = Arc::clone(&peak);
             async move {
+                let prior = in_flight.fetch_add(1, Ordering::Relaxed);
+                let now = prior + 1;
+                peak.fetch_max(now, Ordering::Relaxed);
+                debug!(
+                    target: "deepseek_cli::tools",
+                    tool = "rlm_query",
+                    idx,
+                    in_flight = now,
+                    "child request start"
+                );
+                let started = Instant::now();
                 let request = MessageRequest {
                     model: (*model).clone(),
                     messages: vec![Message {
@@ -168,11 +191,31 @@ impl ToolSpec for RlmQueryTool {
                     temperature: Some(0.4),
                     top_p: Some(0.9),
                 };
-                (idx, client.create_message(request).await)
+                let response = client.create_message(request).await;
+                let elapsed_ms = started.elapsed().as_millis() as u64;
+                in_flight.fetch_sub(1, Ordering::Relaxed);
+                debug!(
+                    target: "deepseek_cli::tools",
+                    tool = "rlm_query",
+                    idx,
+                    elapsed_ms,
+                    ok = response.is_ok(),
+                    "child request done"
+                );
+                (idx, response)
             }
         });
 
         let results = join_all(futures).await;
+        let dispatch_elapsed_ms = dispatch_started.elapsed().as_millis() as u64;
+        debug!(
+            target: "deepseek_cli::tools",
+            tool = "rlm_query",
+            total,
+            peak = peak.load(Ordering::Relaxed),
+            dispatch_elapsed_ms,
+            "fan-out complete"
+        );
 
         let mut ordered: Vec<(usize, String)> = results
             .into_iter()

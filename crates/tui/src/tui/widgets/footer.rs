@@ -49,6 +49,54 @@ pub struct FooterProps {
     pub cost: Vec<Span<'static>>,
     /// Optional toast that, when present, replaces the left status line.
     pub toast: Option<FooterToast>,
+    /// When `Some(frame_idx)`, the gap between the left status line and the
+    /// right-hand chips is filled with an animated water-spout strip keyed
+    /// off `frame_idx` (deterministic given the frame). `None` keeps the gap
+    /// as plain whitespace, which is the idle/ready state.
+    pub working_strip_frame: Option<u64>,
+}
+
+/// One frame of the footer's water-spout animation. `col` is the cell index
+/// inside the strip, `width` the strip's total width, `frame` the discrete
+/// frame counter. Returns the glyph that should appear in that cell on that
+/// frame.
+///
+/// Visual: a single calm water line of `─` with one upward spout glyph that
+/// drifts back and forth via a triangle-wave bounce. Minimal, artistic, and
+/// purely deterministic so the test suite can pin a specific frame.
+#[must_use]
+pub fn footer_working_strip_glyph_at(col: usize, width: usize, frame: u64) -> char {
+    if width == 0 {
+        return ' ';
+    }
+    let w = width as i64;
+    let frame = frame as i64;
+
+    // Bounce a value that counts up forever between [0, w-1] using a
+    // triangle wave so the spout rides back and forth instead of wrapping.
+    let span = (w * 2).max(2);
+    let t = frame.rem_euclid(span);
+    let pos = if t < w { t } else { (span - 1) - t };
+
+    let dist = (col as i64 - pos).abs();
+    match dist {
+        0 => '\u{257F}', // ╿  — vertical bar with a stronger top half: a spout standing up out of the surface
+        1 => '\u{2576}', // ╶  — short stub on the spout's shoulder, like a splash
+        _ => '\u{2500}', // ─  — calm water surface
+    }
+}
+
+/// Build the per-frame water-spout string of `width` characters. Empty string
+/// when width is 0. The result is the same visual width as requested (one
+/// char per column for box-drawing chars) and is safe to drop into a `Span`
+/// between the footer's left and right segments.
+#[must_use]
+pub fn footer_working_strip_string(width: usize, frame: u64) -> String {
+    let mut out = String::with_capacity(width * 4);
+    for col in 0..width {
+        out.push(footer_working_strip_glyph_at(col, width, frame));
+    }
+    out
 }
 
 /// Build a "N agents" chip span list when there are sub-agents in flight.
@@ -112,6 +160,7 @@ impl FooterProps {
             cache,
             cost,
             toast,
+            working_strip_frame: None,
         }
     }
 }
@@ -253,8 +302,18 @@ impl Renderable for FooterWidget {
         let left_width = span_width(&left_spans);
         let spacer_width = available_width.saturating_sub(left_width + right_width);
 
+        // When a turn is in flight, fill the gap with a thin animated water-
+        // spout strip; otherwise the gap stays as plain whitespace.
+        let spacer_span = match self.props.working_strip_frame {
+            Some(frame) if spacer_width > 0 => Span::styled(
+                footer_working_strip_string(spacer_width, frame),
+                Style::default().fg(palette::DEEPSEEK_SKY),
+            ),
+            _ => Span::raw(" ".repeat(spacer_width)),
+        };
+
         let mut all_spans = left_spans;
-        all_spans.push(Span::raw(" ".repeat(spacer_width)));
+        all_spans.push(spacer_span);
         all_spans.extend(right_spans);
 
         let paragraph = Paragraph::new(Line::from(all_spans));
@@ -465,6 +524,73 @@ mod tests {
         assert!(rendered.contains("agent"));
         assert!(rendered.contains("deepseek-v4-flash"));
         assert!(!rendered.contains("ready"));
+    }
+
+    #[test]
+    fn working_strip_string_width_matches_request() {
+        // The strip must produce exactly `width` characters per frame —
+        // otherwise the spacer math in `FooterWidget::render` would
+        // mis-align the right-hand chips. (Glyphs are all ASCII / Latin-1
+        // so char count equals visual width here.)
+        for width in [0usize, 1, 8, 60, 200] {
+            let s = super::footer_working_strip_string(width, 7);
+            assert_eq!(s.chars().count(), width, "width {width} mismatch");
+        }
+    }
+
+    #[test]
+    fn working_strip_glyph_is_deterministic_per_frame() {
+        // Same (col, width, frame) → same glyph. Different `frame` values
+        // produce different overall strings, which is what makes the
+        // animation visible.
+        let a = super::footer_working_strip_string(40, 1);
+        let b = super::footer_working_strip_string(40, 1);
+        assert_eq!(a, b, "deterministic given the same frame");
+        let c = super::footer_working_strip_string(40, 2);
+        assert_ne!(a, c, "advancing the frame must change the strip");
+    }
+
+    #[test]
+    fn working_strip_renders_glyphs_only_when_frame_is_some() {
+        // Idle: spacer is plain whitespace. Active: spacer contains the
+        // box-drawing animation glyphs (`╿` spout, `╶` splash, `─` water
+        // surface) and visibly differs from the idle render.
+        let app = make_app();
+        let mut props = idle_props_for(&app);
+
+        let area = ratatui::layout::Rect::new(0, 0, 80, 1);
+        let mut buf = ratatui::buffer::Buffer::empty(area);
+        FooterWidget::new(props.clone()).render(area, &mut buf);
+        let idle: String = (0..area.width).map(|x| buf[(x, 0)].symbol()).collect();
+
+        props.working_strip_frame = Some(13);
+        let mut buf2 = ratatui::buffer::Buffer::empty(area);
+        FooterWidget::new(props).render(area, &mut buf2);
+        let active: String = (0..area.width).map(|x| buf2[(x, 0)].symbol()).collect();
+
+        assert_ne!(
+            idle, active,
+            "active footer must visibly differ from idle one"
+        );
+        assert!(
+            active.contains('\u{257F}')
+                || active.contains('\u{2576}')
+                || active.contains('\u{2500}'),
+            "active strip must contain at least one animation glyph: {active:?}",
+        );
+    }
+
+    #[test]
+    fn working_strip_spout_position_advances_with_frame() {
+        // The single spout column must move between consecutive frames so
+        // the animation reads as drift rather than a static pattern.
+        let width = 16;
+        let f0 = super::footer_working_strip_string(width, 1);
+        let f1 = super::footer_working_strip_string(width, 2);
+        let pos = |s: &str| s.chars().position(|c| c == '\u{257F}');
+        let p0 = pos(&f0).expect("frame 1 has a spout");
+        let p1 = pos(&f1).expect("frame 2 has a spout");
+        assert_ne!(p0, p1, "spout column must advance between frames");
     }
 
     #[test]

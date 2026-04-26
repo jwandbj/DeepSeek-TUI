@@ -898,6 +898,10 @@ pub struct GenericToolCell {
     pub status: ToolStatus,
     pub input_summary: Option<String>,
     pub output: Option<String>,
+    /// When the tool is `rlm_query` (or any future fan-out tool that exposes a
+    /// list of child prompts), each prompt is shown on its own indented row
+    /// instead of the inline `args:` summary. `None` for ordinary tools.
+    pub prompts: Option<Vec<String>>,
 }
 
 impl GenericToolCell {
@@ -917,15 +921,37 @@ impl GenericToolCell {
             tool_value_style(),
             width,
         ));
-        let show_args = matches!(self.status, ToolStatus::Running) || self.output.is_none();
-        if show_args && let Some(summary) = self.input_summary.as_ref() {
-            lines.extend(render_compact_kv(
-                "args",
-                summary,
-                tool_value_style(),
-                width,
-            ));
+
+        // Prefer per-prompt rows over the generic args summary when the tool
+        // exposes a list of child prompts (rlm_query). One row per child with
+        // a `[i]` index makes the fan-out legible without expanding JSON.
+        let show_prompts = matches!(self.status, ToolStatus::Running) || self.output.is_none();
+        if show_prompts
+            && let Some(prompts) = self.prompts.as_ref()
+            && !prompts.is_empty()
+        {
+            for (idx, prompt) in prompts.iter().enumerate() {
+                let label = if idx == 0 { "prompts" } else { "" };
+                let value = format!("[{idx}] {}", truncate_text(prompt.trim(), 200));
+                lines.extend(render_card_detail_line(
+                    if label.is_empty() { None } else { Some(label) },
+                    &value,
+                    tool_value_style(),
+                    width,
+                ));
+            }
+        } else {
+            let show_args = matches!(self.status, ToolStatus::Running) || self.output.is_none();
+            if show_args && let Some(summary) = self.input_summary.as_ref() {
+                lines.extend(render_compact_kv(
+                    "args",
+                    summary,
+                    tool_value_style(),
+                    width,
+                ));
+            }
         }
+
         if let Some(output) = self.output.as_ref() {
             lines.extend(render_compact_kv(
                 "result",
@@ -1786,8 +1812,8 @@ fn thinking_state_accent(state: ThinkingVisualState) -> Color {
 #[cfg(test)]
 mod tests {
     use super::{
-        ExecCell, ExecSource, HistoryCell, PlanStep, PlanUpdateCell, TOOL_RUNNING_SYMBOLS,
-        TOOL_STATUS_SYMBOL_MS, ToolCell, ToolStatus, TranscriptRenderOptions,
+        ExecCell, ExecSource, GenericToolCell, HistoryCell, PlanStep, PlanUpdateCell,
+        TOOL_RUNNING_SYMBOLS, TOOL_STATUS_SYMBOL_MS, ToolCell, ToolStatus, TranscriptRenderOptions,
         extract_reasoning_summary, render_thinking, running_status_label_with_elapsed,
     };
     use crate::deepseek_theme::Theme;
@@ -2181,5 +2207,49 @@ mod tests {
         // head + tail around an omission marker.
         let last = format!("output line {:02}", total_output_lines - 1);
         assert!(transcript_text.contains(&last));
+    }
+
+    #[test]
+    fn generic_tool_cell_renders_rlm_prompts_as_indexed_rows() {
+        // When prompts are populated (rlm_query fan-out), each child shows on
+        // its own row instead of the inline `args:` summary so the user can
+        // read what each child was asked.
+        let cell = HistoryCell::Tool(ToolCell::Generic(GenericToolCell {
+            name: "rlm_query".to_string(),
+            status: ToolStatus::Running,
+            input_summary: Some("prompts: <3 items>".to_string()),
+            output: None,
+            prompts: Some(vec![
+                "Summarize the README".to_string(),
+                "List the public types in client.rs".to_string(),
+                "Diff this commit against main".to_string(),
+            ]),
+        }));
+        let text = lines_text(&cell.lines(80));
+
+        assert!(text.contains("[0] Summarize the README"));
+        assert!(text.contains("[1] List the public types in client.rs"));
+        assert!(text.contains("[2] Diff this commit against main"));
+        // The inline args summary must not also be emitted — we replaced it
+        // with the per-child rows.
+        assert!(
+            !text.contains("args: prompts:"),
+            "inline `args:` summary must be suppressed when per-prompt rows render"
+        );
+    }
+
+    #[test]
+    fn generic_tool_cell_falls_back_to_args_when_prompts_none() {
+        // Non-fan-out tools keep the existing `args:` summary so behavior
+        // doesn't drift for everything else.
+        let cell = HistoryCell::Tool(ToolCell::Generic(GenericToolCell {
+            name: "file_search".to_string(),
+            status: ToolStatus::Running,
+            input_summary: Some("query: foo".to_string()),
+            output: None,
+            prompts: None,
+        }));
+        let text = lines_text(&cell.lines(80));
+        assert!(text.contains("query: foo"));
     }
 }

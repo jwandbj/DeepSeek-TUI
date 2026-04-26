@@ -349,19 +349,27 @@ fn format_context_budget_caps_overflow_display() {
 }
 
 #[test]
-fn footer_state_label_prefers_compacting_then_thinking() {
+fn footer_state_label_drops_thinking_and_prefers_compacting() {
+    // We deliberately do not surface a "thinking" label for `is_loading` —
+    // the animated water-spout strip in the footer's spacer is the visual
+    // signal. `is_loading` alone falls through to "ready"; `is_compacting`
+    // still wins because compacting is a less-common, distinct state.
     let mut app = create_test_app();
     assert_eq!(footer_state_label(&app).0, "ready");
 
     app.is_loading = true;
-    assert!(footer_state_label(&app).0.starts_with("thinking"));
+    assert_eq!(
+        footer_state_label(&app).0,
+        "ready",
+        "is_loading must NOT produce a `thinking` text label — the animation handles it"
+    );
 
     app.is_compacting = true;
     assert!(footer_state_label(&app).0.starts_with("compacting"));
 }
 
 #[test]
-fn footer_status_line_spans_show_mode_model_and_status() {
+fn footer_status_line_spans_show_mode_and_model_idle_and_active() {
     let mut app = create_test_app();
     app.model = "deepseek-v4-flash".to_string();
 
@@ -371,11 +379,17 @@ fn footer_status_line_spans_show_mode_model_and_status() {
     assert!(idle.contains("\u{00B7}"));
     assert!(!idle.contains("ready"));
 
+    // is_loading no longer adds a "thinking" text label — the live-work
+    // signal is the animated water-spout strip the renderer paints into
+    // the footer's spacer. The mode + model still render unchanged.
     app.is_loading = true;
     let active = spans_text(&footer_status_line_spans(&app, 60));
     assert!(active.contains("agent"));
     assert!(active.contains("deepseek-v4-flash"));
-    assert!(active.contains("thinking"));
+    assert!(
+        !active.contains("thinking"),
+        "footer must not show a `thinking` text label while loading"
+    );
 }
 
 #[test]
@@ -896,6 +910,7 @@ fn jump_to_adjacent_tool_cell_finds_next_and_previous() {
             status: ToolStatus::Success,
             input_summary: Some("query: foo".to_string()),
             output: Some("done".to_string()),
+            prompts: None,
         })),
         HistoryCell::Assistant {
             content: "ok".to_string(),
@@ -906,6 +921,7 @@ fn jump_to_adjacent_tool_cell_finds_next_and_previous() {
             status: ToolStatus::Success,
             input_summary: Some("ls".to_string()),
             output: Some("...".to_string()),
+            prompts: None,
         })),
     ];
     app.mark_history_updated();
