@@ -126,11 +126,13 @@ jobs:
   publish-npm:
     needs: release
     runs-on: ubuntu-latest
-    # Trusted Publishing via OIDC. Configure npm to trust this workflow
-    # filename (`release.yml`) for Hmbown/DeepSeek-TUI.
+    # Token-based publish (npm classic automation token). The OIDC
+    # Trusted Publisher path was unreliable across v0.5.1/v0.5.2/v0.6.1
+    # (npm returned 404 on PUT despite valid OIDC). Set the `NPM_TOKEN`
+    # repo secret to a granular access token scoped to `deepseek-tui`
+    # with publish permission.
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -148,16 +150,15 @@ jobs:
           fi
       - name: Publish wrapper to npm
         working-directory: npm/deepseek-tui
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
 
   publish-npm-manual:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    # npm can trust only one workflow filename; keep npm-only retries here so
-    # the trusted publisher can remain `release.yml`.
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -175,4 +176,6 @@ jobs:
           fi
       - name: Publish wrapper to npm
         working-directory: npm/deepseek-tui
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
