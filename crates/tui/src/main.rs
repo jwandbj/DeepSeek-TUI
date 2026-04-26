@@ -2731,6 +2731,9 @@ async fn run_interactive(
     );
     let use_alt_screen = should_use_alt_screen(cli, config);
     let use_mouse_capture = should_use_mouse_capture(cli, config, use_alt_screen);
+    let use_bracketed_paste = crate::settings::Settings::load()
+        .map(|s| s.bracketed_paste)
+        .unwrap_or(true);
 
     tui::run_tui(
         config,
@@ -2740,6 +2743,7 @@ async fn run_interactive(
             allow_shell: cli.yolo || config.allow_shell(),
             use_alt_screen,
             use_mouse_capture,
+            use_bracketed_paste,
             skills_dir: config.skills_dir(),
             memory_path: config.memory_path(),
             notes_path: config.notes_path(),

@@ -82,6 +82,7 @@ mod tests {
             allow_shell: false,
             use_alt_screen: true,
             use_mouse_capture: false,
+            use_bracketed_paste: true,
             max_subagents: 1,
             skills_dir: PathBuf::from("."),
             memory_path: PathBuf::from("memory.md"),

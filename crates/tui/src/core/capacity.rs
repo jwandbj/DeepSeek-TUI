@@ -693,4 +693,40 @@ mod tests {
         assert_eq!(decision.action, GuardrailAction::NoIntervention);
         assert!(decision.cooldown_blocked);
     }
+
+    /// Hot-path microbench for `compute_profile`. Run with:
+    ///
+    /// ```text
+    /// cargo test -p deepseek-tui --release capacity::tests::bench_compute_profile -- --ignored --nocapture
+    /// ```
+    ///
+    /// Establishes a baseline cost so we can detect regressions when the
+    /// observation cadence is high (50+ message turns × per-step calls). Adds
+    /// no dev-deps; we measure with `Instant` and print rather than gating CI.
+    #[test]
+    #[ignore]
+    fn bench_compute_profile() {
+        use std::time::Instant;
+
+        for &window_len in &[16usize, 64, 256, 1024] {
+            let mut window: VecDeque<f64> = VecDeque::with_capacity(window_len);
+            for i in 0..window_len {
+                #[allow(clippy::cast_precision_loss)]
+                window.push_back((i as f64).sin() * 0.5);
+            }
+
+            let iters = 100_000usize;
+            let start = Instant::now();
+            for _ in 0..iters {
+                let profile = compute_profile(&window);
+                std::hint::black_box(profile);
+            }
+            let elapsed = start.elapsed();
+            let per_call_ns = elapsed.as_nanos() as f64 / iters as f64;
+            println!(
+                "compute_profile window={window_len:>4}  total={:?}  per-call={per_call_ns:>8.0}ns",
+                elapsed
+            );
+        }
+    }
 }

@@ -124,6 +124,7 @@ const SIDEBAR_VISIBLE_MIN_WIDTH: u16 = 100;
 pub async fn run_tui(config: &Config, options: TuiOptions) -> Result<()> {
     let use_alt_screen = options.use_alt_screen;
     let use_mouse_capture = options.use_mouse_capture;
+    let use_bracketed_paste = options.use_bracketed_paste;
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     if use_alt_screen {
@@ -132,7 +133,9 @@ pub async fn run_tui(config: &Config, options: TuiOptions) -> Result<()> {
     if use_mouse_capture {
         execute!(stdout, EnableMouseCapture)?;
     }
-    execute!(stdout, EnableBracketedPaste)?;
+    if use_bracketed_paste {
+        execute!(stdout, EnableBracketedPaste)?;
+    }
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     let event_broker = EventBroker::new();
@@ -295,7 +298,9 @@ pub async fn run_tui(config: &Config, options: TuiOptions) -> Result<()> {
     if use_mouse_capture {
         execute!(terminal.backend_mut(), DisableMouseCapture)?;
     }
-    execute!(terminal.backend_mut(), DisableBracketedPaste)?;
+    if use_bracketed_paste {
+        execute!(terminal.backend_mut(), DisableBracketedPaste)?;
+    }
     terminal.show_cursor()?;
 
     result
@@ -688,13 +693,23 @@ async fn run_event_loop(
                     }
                     EngineEvent::PauseEvents => {
                         if !event_broker.is_paused() {
-                            pause_terminal(terminal, app.use_alt_screen, app.use_mouse_capture)?;
+                            pause_terminal(
+                                terminal,
+                                app.use_alt_screen,
+                                app.use_mouse_capture,
+                                app.use_bracketed_paste,
+                            )?;
                             event_broker.pause_events();
                         }
                     }
                     EngineEvent::ResumeEvents => {
                         if event_broker.is_paused() {
-                            resume_terminal(terminal, app.use_alt_screen, app.use_mouse_capture)?;
+                            resume_terminal(
+                                terminal,
+                                app.use_alt_screen,
+                                app.use_mouse_capture,
+                                app.use_bracketed_paste,
+                            )?;
                             event_broker.resume_events();
                         }
                     }
@@ -3034,6 +3049,7 @@ fn pause_terminal(
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     use_alt_screen: bool,
     use_mouse_capture: bool,
+    use_bracketed_paste: bool,
 ) -> Result<()> {
     disable_raw_mode()?;
     if use_alt_screen {
@@ -3042,7 +3058,9 @@ fn pause_terminal(
     if use_mouse_capture {
         execute!(terminal.backend_mut(), DisableMouseCapture)?;
     }
-    execute!(terminal.backend_mut(), DisableBracketedPaste)?;
+    if use_bracketed_paste {
+        execute!(terminal.backend_mut(), DisableBracketedPaste)?;
+    }
     Ok(())
 }
 
@@ -3050,6 +3068,7 @@ fn resume_terminal(
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     use_alt_screen: bool,
     use_mouse_capture: bool,
+    use_bracketed_paste: bool,
 ) -> Result<()> {
     enable_raw_mode()?;
     if use_alt_screen {
@@ -3058,7 +3077,9 @@ fn resume_terminal(
     if use_mouse_capture {
         execute!(terminal.backend_mut(), EnableMouseCapture)?;
     }
-    execute!(terminal.backend_mut(), EnableBracketedPaste)?;
+    if use_bracketed_paste {
+        execute!(terminal.backend_mut(), EnableBracketedPaste)?;
+    }
     terminal.clear()?;
     Ok(())
 }

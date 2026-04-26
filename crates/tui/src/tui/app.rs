@@ -321,6 +321,10 @@ pub struct TuiOptions {
     pub use_alt_screen: bool,
     /// Capture mouse input for internal scrolling/selection.
     pub use_mouse_capture: bool,
+    /// Enable terminal bracketed-paste mode (OSC `?2004h` / `?2004l`). Defaults
+    /// on; settable via `bracketed_paste = false` in `settings.toml` for the
+    /// rare terminal that mishandles it.
+    pub use_bracketed_paste: bool,
     /// Maximum number of concurrent sub-agents.
     pub max_subagents: usize,
     #[allow(dead_code)]
@@ -397,6 +401,7 @@ pub struct App {
     pub skills_dir: PathBuf,
     pub use_alt_screen: bool,
     pub use_mouse_capture: bool,
+    pub use_bracketed_paste: bool,
     #[allow(dead_code)]
     pub system_prompt: Option<SystemPrompt>,
     pub input_history: Vec<String>,
@@ -638,6 +643,7 @@ impl App {
             allow_shell,
             use_alt_screen,
             use_mouse_capture,
+            use_bracketed_paste,
             max_subagents,
             skills_dir: global_skills_dir,
             memory_path: _,
@@ -745,6 +751,7 @@ impl App {
             skills_dir,
             use_alt_screen,
             use_mouse_capture,
+            use_bracketed_paste,
             system_prompt: None,
             input_history: Vec::new(),
             history_index: None,
@@ -1773,6 +1780,7 @@ mod tests {
             allow_shell: yolo,
             use_alt_screen: true,
             use_mouse_capture: false,
+            use_bracketed_paste: true,
             max_subagents: 1,
             skills_dir: PathBuf::from("."),
             memory_path: PathBuf::from("memory.md"),

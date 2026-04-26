@@ -21,6 +21,10 @@ pub struct Settings {
     pub low_motion: bool,
     /// Enable fancy footer animations (water-spout strip, pulsing text)
     pub fancy_animations: bool,
+    /// Enable terminal bracketed-paste mode. Default true. Disable if your
+    /// terminal mishandles the `\e[?2004h` escape (rare; some legacy
+    /// terminals over SSH+screen multiplex without the cap).
+    pub bracketed_paste: bool,
     /// Show thinking blocks from the model
     pub show_thinking: bool,
     /// Show detailed tool output
@@ -50,6 +54,7 @@ impl Default for Settings {
             calm_mode: false,
             low_motion: false,
             fancy_animations: false,
+            bracketed_paste: true,
             show_thinking: true,
             show_tool_details: true,
             composer_density: "comfortable".to_string(),
@@ -141,6 +146,9 @@ impl Settings {
             }
             "fancy_animations" | "fancy" | "animations" => {
                 self.fancy_animations = parse_bool(value)?;
+            }
+            "bracketed_paste" | "paste" => {
+                self.bracketed_paste = parse_bool(value)?;
             }
             "show_thinking" | "thinking" => {
                 self.show_thinking = parse_bool(value)?;
@@ -251,6 +259,7 @@ impl Settings {
         lines.push(format!("  calm_mode:          {}", self.calm_mode));
         lines.push(format!("  low_motion:         {}", self.low_motion));
         lines.push(format!("  fancy_animations:   {}", self.fancy_animations));
+        lines.push(format!("  bracketed_paste:    {}", self.bracketed_paste));
         lines.push(format!("  show_thinking:      {}", self.show_thinking));
         lines.push(format!("  show_tool_details:  {}", self.show_tool_details));
         lines.push(format!("  composer_density:   {}", self.composer_density));
@@ -285,6 +294,10 @@ impl Settings {
             (
                 "fancy_animations",
                 "Fancy footer animations (water-spout strip): on/off",
+            ),
+            (
+                "bracketed_paste",
+                "Terminal bracketed-paste mode: on/off (rare to disable)",
             ),
             ("show_thinking", "Show model thinking: on/off"),
             ("show_tool_details", "Show detailed tool output: on/off"),
