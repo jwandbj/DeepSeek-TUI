@@ -1,5 +1,6 @@
 //! Main GUI application state and rendering.
 
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender};
@@ -49,6 +50,13 @@ pub struct OpenFile {
     highlight_cache: Option<(String, egui::text::LayoutJob)>,
 }
 
+/// One entry in the file tree (async-loaded).
+#[derive(Debug, Clone)]
+struct FileTreeEntry {
+    path: PathBuf,
+    is_dir: bool,
+}
+
 pub struct GuiApp {
     config: Config,
     engine: Option<EngineHandle>,
@@ -76,6 +84,11 @@ pub struct GuiApp {
     pending_close_others: Option<usize>,
     // Deferred auto-save flag
     pending_auto_save: bool,
+    // Async file-tree I/O
+    file_tree_cache: HashMap<PathBuf, Vec<FileTreeEntry>>,
+    file_tree_pending: HashSet<PathBuf>,
+    file_tree_tx: Sender<(PathBuf, Vec<FileTreeEntry>)>,
+    file_tree_rx: Receiver<(PathBuf, Vec<FileTreeEntry>)>,
 }
 
 impl GuiApp {
@@ -83,6 +96,7 @@ impl GuiApp {
         apply_theme(&_cc.egui_ctx);
 
         let (event_tx, event_rx) = std::sync::mpsc::channel::<EngineEvent>();
+        let (file_tree_tx, file_tree_rx) = std::sync::mpsc::channel::<(PathBuf, Vec<FileTreeEntry>)>();
 
         let (config, engine) = match load_config() {
             Ok(cfg) => {
@@ -135,10 +149,22 @@ impl GuiApp {
             pending_close_all: false,
             pending_close_others: None,
             pending_auto_save: false,
+            file_tree_cache: HashMap::new(),
+            file_tree_pending: HashSet::new(),
+            file_tree_tx,
+            file_tree_rx,
         }
     }
 
     /// Drain all pending engine events and update state.
+    /// Drain async file-tree I/O results and update the cache.
+    fn poll_file_tree_results(&mut self) {
+        while let Ok((path, entries)) = self.file_tree_rx.try_recv() {
+            self.file_tree_pending.remove(&path);
+            self.file_tree_cache.insert(path, entries);
+        }
+    }
+
     fn poll_engine_events(&mut self) {
         while let Ok(event) = self.event_rx.try_recv() {
             match event {
@@ -477,6 +503,7 @@ impl eframe::App for GuiApp {
         apply_theme(ctx);
 
         self.poll_engine_events();
+        self.poll_file_tree_results();
 
         // Settings window
         if self.show_settings {

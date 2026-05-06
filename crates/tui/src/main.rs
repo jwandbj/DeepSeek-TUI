@@ -12,7 +12,6 @@ use dotenvy::dotenv;
 use tempfile::NamedTempFile;
 use wait_timeout::ChildExt;
 
-<<<<<<< HEAD
 mod audit;
 mod auto_reasoning;
 mod automation_manager;
@@ -69,15 +68,6 @@ mod utils;
 mod working_set;
 mod workspace_trust;
 
-use crate::config::{Config, DEFAULT_TEXT_MODEL, MAX_SUBAGENTS};
-use crate::eval::{EvalHarness, EvalHarnessConfig, ScenarioStepKind};
-use crate::features::{Feature, render_feature_table};
-use crate::llm_client::LlmClient;
-use crate::mcp::{McpConfig, McpPool, McpServerConfig};
-use crate::models::{ContentBlock, Message, MessageRequest, SystemPrompt};
-use crate::session_manager::{SessionManager, create_saved_session};
-use crate::tui::history::{summarize_tool_args, summarize_tool_output};
-=======
 use deepseek_tui::config::{Config, DEFAULT_TEXT_MODEL, MAX_SUBAGENTS};
 use deepseek_tui::eval::{EvalHarness, EvalHarnessConfig, ScenarioStepKind};
 use deepseek_tui::features::{Feature, render_feature_table};
@@ -86,7 +76,6 @@ use deepseek_tui::mcp::{McpConfig, McpPool, McpServerConfig};
 use deepseek_tui::models::{ContentBlock, Message, MessageRequest, SystemPrompt};
 use deepseek_tui::session_manager::{SessionManager, create_saved_session};
 use deepseek_tui::tui::history::{summarize_tool_args, summarize_tool_output};
->>>>>>> b8550f3 (WIP: æˆ‘çš„åŠŸèƒ½æ”¹åŠ¨)
 
 #[derive(Parser, Debug)]
 #[command(
@@ -213,7 +202,7 @@ enum Commands {
         #[arg(short = 'R', long)]
         repo: Option<String>,
         /// Skip `gh pr checkout` even if gh is available. By default
-        /// the working tree is left as-is â€?checkout is opt-in via
+        /// the working tree is left as-is â€” checkout is opt-in via
         /// `--checkout` because dirty trees fail it loudly.
         #[arg(long, default_value_t = false)]
         checkout: bool,
@@ -549,14 +538,14 @@ enum SandboxCommand {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Set up process panic hook before anything else â€?writes crash dumps
+    // Set up process panic hook before anything else ï¿½?writes crash dumps
     // to ~/.deepseek/crashes/ even if the panic happens before tokio is up,
     // and restores the terminal so a panicked TUI doesn't leave the user's
     // shell stuck in alt-screen mode.
     let orig_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |panic_info| {
         // Restore the terminal first so the panic message itself, plus the
-        // user's shell after exit, are visible. Best-effort â€?we may not be
+        // user's shell after exit, are visible. Best-effort ï¿½?we may not be
         // in raw / alt-screen mode if the panic happens pre-TUI.
         use crossterm::event::{
             DisableBracketedPaste, DisableMouseCapture, PopKeyboardEnhancementFlags,
@@ -1023,7 +1012,7 @@ fn init_plugins_dir(
 ///
 /// The runtime API always allows the built-in dev defaults
 /// (localhost:3000, localhost:1420, tauri://localhost). User entries are
-/// appended on top â€?empty strings are skipped, and duplicates are deduped
+/// appended on top ï¿½?empty strings are skipped, and duplicates are deduped
 /// while preserving first-seen order. Whalescale#255 / #561.
 fn resolve_cors_origins(config: &Config, flag_origins: &[String]) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
@@ -1130,10 +1119,10 @@ fn run_setup(config: &Config, workspace: &Path, args: SetupArgs) -> Result<()> {
         let status = init_mcp_config(&mcp_path, args.force)?;
         match status {
             WriteStatus::Created => {
-                println!("  âœ?Created MCP config at {}", mcp_path.display());
+                println!("   âœ“ Created MCP config at {}", mcp_path.display());
             }
             WriteStatus::Overwritten => {
-                println!("  âœ?Overwrote MCP config at {}", mcp_path.display());
+                println!("  âœ“ Overwrote MCP config at {}", mcp_path.display());
             }
             WriteStatus::SkippedExists => {
                 println!("  Â· MCP config already exists at {}", mcp_path.display());
@@ -1151,10 +1140,10 @@ fn run_setup(config: &Config, workspace: &Path, args: SetupArgs) -> Result<()> {
         let (skill_path, status) = init_skills_dir(&skills_dir, args.force)?;
         match status {
             WriteStatus::Created => {
-                println!("  âœ?Created example skill at {}", skill_path.display());
+                println!("  ï¿½?Created example skill at {}", skill_path.display());
             }
             WriteStatus::Overwritten => {
-                println!("  âœ?Overwrote example skill at {}", skill_path.display());
+                println!("  ï¿½?Overwrote example skill at {}", skill_path.display());
             }
             WriteStatus::SkippedExists => {
                 println!(
@@ -1201,7 +1190,7 @@ fn run_setup(config: &Config, workspace: &Path, args: SetupArgs) -> Result<()> {
 
     let sandbox = deepseek_tui::sandbox::get_platform_sandbox();
     if let Some(kind) = sandbox {
-        println!("  âœ?Sandbox available: {kind}");
+        println!("  ï¿½?Sandbox available: {kind}");
     } else {
         println!("  Â· Sandbox not available on this platform (best-effort only).");
     }
@@ -1212,10 +1201,10 @@ fn run_setup(config: &Config, workspace: &Path, args: SetupArgs) -> Result<()> {
 fn report_write_status(label: &str, path: &Path, status: WriteStatus) {
     match status {
         WriteStatus::Created => {
-            println!("  âœ?Created {label} at {}", path.display());
+            println!("  ï¿½?Created {label} at {}", path.display());
         }
         WriteStatus::Overwritten => {
-            println!("  âœ?Overwrote {label} at {}", path.display());
+            println!("  ï¿½?Overwrote {label} at {}", path.display());
         }
         WriteStatus::SkippedExists => {
             println!("  Â· {label} already exists at {}", path.display());
@@ -1284,11 +1273,11 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
     match resolve_api_key_source(config) {
         ApiKeySource::Env => println!(
             "  {} api_key: set via DEEPSEEK_API_KEY",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b)
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b)
         ),
         ApiKeySource::Config => println!(
             "  {} api_key: set via config",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b)
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b)
         ),
         ApiKeySource::Missing => {
             let (env_var, login_hint) = match config.api_provider() {
@@ -1318,7 +1307,7 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
             };
             println!(
                 "  {} api_key: missing  (set {env_var} or `[providers.{}].api_key` in ~/.deepseek/config.toml; or run `{login_hint}`)",
-                "âœ?.truecolor(red_r, red_g, red_b),
+                "ï¿½?.truecolor(red_r, red_g, red_b),
                 match config.api_provider() {
                     deepseek_tui::config::ApiProvider::NvidiaNim => "nvidia_nim",
                     deepseek_tui::config::ApiProvider::Openrouter => "openrouter",
@@ -1366,7 +1355,7 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
     let tools_present = if tools_dir.exists() {
         ""
     } else {
-        "  (missing â€?run `setup --tools`)"
+        "  (missing ï¿½?run `setup --tools`)"
     };
     println!(
         "  Â· tools: {} entries at {}{tools_present}",
@@ -1382,7 +1371,7 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
     let plugins_present = if plugins_dir.exists() {
         ""
     } else {
-        "  (missing â€?run `setup --plugins`)"
+        "  (missing ï¿½?run `setup --plugins`)"
     };
     println!(
         "  Â· plugins: {} entries at {}{plugins_present}",
@@ -1398,7 +1387,7 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
     match sandbox {
         Some(kind) => println!(
             "  {} sandbox: {kind}",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b)
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b)
         ),
         None => println!(
             "  {} sandbox: unavailable (commands run best-effort)",
@@ -1431,7 +1420,7 @@ fn run_setup_clean(checkpoints_dir: &Path, force: bool) -> Result<()> {
 
     if !checkpoints_dir.exists() {
         println!(
-            "Nothing to clean â€?checkpoints dir does not exist: {}",
+            "Nothing to clean ï¿½?checkpoints dir does not exist: {}",
             checkpoints_dir.display()
         );
         return Ok(());
@@ -1440,7 +1429,7 @@ fn run_setup_clean(checkpoints_dir: &Path, force: bool) -> Result<()> {
     let plan = collect_clean_targets(checkpoints_dir);
     if plan.targets.is_empty() {
         println!(
-            "Nothing to clean â€?no checkpoint files in {}",
+            "Nothing to clean ï¿½?no checkpoint files in {}",
             checkpoints_dir.display()
         );
         return Ok(());
@@ -1460,7 +1449,7 @@ fn run_setup_clean(checkpoints_dir: &Path, force: bool) -> Result<()> {
     let removed = execute_clean_plan(&plan)?;
     println!("{}", "Cleaned checkpoints:".bold());
     for path in &removed {
-        println!("  âœ?{}", path.display());
+        println!("  ï¿½?{}", path.display());
     }
     Ok(())
 }
@@ -1506,7 +1495,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     if config_path.exists() {
         println!(
             "  {} config.toml found at {}",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             deepseek_tui::utils::display_path(&config_path)
         );
     } else {
@@ -1572,7 +1561,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
                     .as_ref()
                     .is_some_and(|v| !v.trim().is_empty()));
         let icon = if in_env || in_config {
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b)
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b)
         } else {
             "Â·".dimmed()
         };
@@ -1589,10 +1578,10 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     println!("  Â· credential sources: env, ~/.deepseek/config.toml");
 
     // #593: surface keyring/config disagreement explicitly. The runtime
-    // resolution order is `keyring â†?env â†?config-file`, so a stale
+    // resolution order is `keyring ï¿½?env ï¿½?config-file`, so a stale
     // keyring entry from a prior install can shadow the value the user
     // sees in `~/.deepseek/config.toml`. We only check the DeepSeek
-    // slot â€?other providers don't write to the keyring today, and
+    // slot ï¿½?other providers don't write to the keyring today, and
     // probing entries that aren't there triggers macOS keychain
     // prompts for nothing.
     let secrets = deepseek_secrets::Secrets::auto_detect();
@@ -1607,15 +1596,15 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
             println!();
             println!(
                 "  {} `deepseek`: OS keyring and config.toml hold different values.",
-                "âš?.truecolor(red_r, red_g, red_b)
+                "ï¿½?.truecolor(red_r, red_g, red_b)
             );
             println!(
-                "    Resolution order is keyring â†?env â†?config-file, so the keyring value wins."
+                "    Resolution order is keyring ï¿½?env ï¿½?config-file, so the keyring value wins."
             );
             println!("    Reconcile by overwriting both with the current key:");
             println!("        deepseek auth set --provider deepseek");
             println!(
-                "    (Or paste the key into the in-TUI onboarding screen â€?it now writes both layers.)"
+                "    (Or paste the key into the in-TUI onboarding screen ï¿½?it now writes both layers.)"
             );
         }
         (Some(_), None) => {
@@ -1641,14 +1630,14 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
             "âœ“".truecolor(aqua_r, aqua_g, aqua_b)
 =======
             "  {} active provider key resolved",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b)
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b)
 >>>>>>> b8550f3 (WIP: æˆ‘çš„åŠŸèƒ½æ”¹åŠ¨)
         );
         true
     } else {
         println!(
             "  {} active provider key not configured",
-            "âœ?.truecolor(red_r, red_g, red_b)
+            "ï¿½?.truecolor(red_r, red_g, red_b)
         );
         println!(
             "    Run 'deepseek auth set --provider <name>' to save a key to ~/.deepseek/config.toml."
@@ -1668,7 +1657,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
             Ok(model) => {
                 println!(
                     "\r  {} API connection successful (model: {})",
-                    "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+                    "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
                     model
                 );
             }
@@ -1676,7 +1665,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
                 let error_msg = e.to_string();
                 println!(
                     "\r  {} API connection failed",
-                    "âœ?.truecolor(red_r, red_g, red_b)
+                    "ï¿½?.truecolor(red_r, red_g, red_b)
                 );
                 if error_msg.contains("401") || error_msg.contains("Unauthorized") {
                     println!("    Invalid API key. Check your DEEPSEEK_API_KEY or config.toml");
@@ -1714,7 +1703,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     if features.enabled(Feature::Mcp) {
         println!(
             "  {} MCP feature flag enabled",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b)
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b)
         );
     } else {
         println!(
@@ -1727,7 +1716,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     if mcp_config_path.exists() {
         println!(
             "  {} MCP config found at {}",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             deepseek_tui::utils::display_path(&mcp_config_path)
         );
         match load_mcp_config(&mcp_config_path) {
@@ -1746,7 +1735,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
                         McpServerDoctorStatus::Ok(ref detail) => {
                             format!(
                                 "  {} {name}: {}",
-                                "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+                                "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
                                 detail
                             )
                         }
@@ -1760,7 +1749,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
                         McpServerDoctorStatus::Error(ref detail) => {
                             format!(
                                 "  {} {name}: {}",
-                                "âœ?.truecolor(red_r, red_g, red_b),
+                                "ï¿½?.truecolor(red_r, red_g, red_b),
                                 detail
                             )
                         }
@@ -1774,7 +1763,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
             Err(err) => {
                 println!(
                     "  {} MCP config parse error: {}",
-                    "âœ?.truecolor(red_r, red_g, red_b),
+                    "ï¿½?.truecolor(red_r, red_g, red_b),
                     err
                 );
             }
@@ -1817,7 +1806,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     if local_skills_dir.exists() {
         println!(
             "  {} local skills dir found at {} ({} items)",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             deepseek_tui::utils::display_path(&local_skills_dir),
             describe_dir(&local_skills_dir)
         );
@@ -1832,7 +1821,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     if agents_skills_dir.exists() {
         println!(
             "  {} .agents skills dir found at {} ({} items)",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             deepseek_tui::utils::display_path(&agents_skills_dir),
             describe_dir(&agents_skills_dir)
         );
@@ -1847,7 +1836,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     if global_skills_dir.exists() {
         println!(
             "  {} global skills dir found at {} ({} items)",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             deepseek_tui::utils::display_path(&global_skills_dir),
             describe_dir(&global_skills_dir)
         );
@@ -1859,13 +1848,13 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         );
     }
 
-    // #432: only print interop dirs when they're populated â€?empty
+    // #432: only print interop dirs when they're populated ï¿½?empty
     // .opencode/.claude folders are common and would just clutter
     // the report with false-positive "absent" lines.
     if opencode_skills_dir.exists() {
         println!(
             "  {} .opencode skills dir found at {} ({} items)",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             deepseek_tui::utils::display_path(&opencode_skills_dir),
             describe_dir(&opencode_skills_dir)
         );
@@ -1873,7 +1862,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     if claude_skills_dir.exists() {
         println!(
             "  {} .claude skills dir found at {} ({} items)",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             deepseek_tui::utils::display_path(&claude_skills_dir),
             describe_dir(&claude_skills_dir)
         );
@@ -1896,7 +1885,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         let count = count_dir_entries(&tools_dir);
         println!(
             "  {} tools dir found at {} ({} items)",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             deepseek_tui::utils::display_path(&tools_dir),
             count
         );
@@ -1917,7 +1906,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         let count = count_dir_entries(&plugins_dir);
         println!(
             "  {} plugins dir found at {} ({} items)",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             deepseek_tui::utils::display_path(&plugins_dir),
             count
         );
@@ -1942,7 +1931,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         if present {
             println!(
                 "  {} tool-output spillover at {} ({} file{})",
-                "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+                "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
                 deepseek_tui::utils::display_path(&spillover_root),
                 count,
                 if count == 1 { "" } else { "s" }
@@ -1961,7 +1950,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         if stash_path.exists() {
             println!(
                 "  {} composer stash at {} ({} parked draft{})",
-                "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+                "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
                 deepseek_tui::utils::display_path(&stash_path),
                 stash_count,
                 if stash_count == 1 { "" } else { "s" }
@@ -1984,7 +1973,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     if let Some(kind) = sandbox {
         println!(
             "  {} sandbox available: {}",
-            "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+            "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
             kind
         );
     } else {
@@ -2086,7 +2075,7 @@ fn run_doctor_json(
     let plugins_dir = default_plugins_dir();
 
     // Memory feature state (#489). Operators ask "is memory on?" and
-    // "where does it live?" â€?surface both here so the question can be
+    // "where does it live?" ï¿½?surface both here so the question can be
     // answered without booting the TUI. Both inputs are checked: the
     // config flag and the env-var override that the runtime would
     // honour. (The dedicated `Config::memory_enabled()` accessor lives
@@ -2431,7 +2420,7 @@ fn init_project() -> Result<()> {
         Ok(path) => {
             println!(
                 "{} Created {}",
-                "âœ?.truecolor(aqua_r, aqua_g, aqua_b),
+                "ï¿½?.truecolor(aqua_r, aqua_g, aqua_b),
                 path.display()
             );
             println!();
@@ -2441,7 +2430,7 @@ fn init_project() -> Result<()> {
         Err(e) => {
             println!(
                 "{} Failed to create AGENTS.md: {}",
-                "âœ?.truecolor(red_r, red_g, red_b),
+                "ï¿½?.truecolor(red_r, red_g, red_b),
                 e
             );
         }
@@ -2628,7 +2617,7 @@ Provide findings ordered by severity with file references, then open questions, 
     Ok(())
 }
 
-/// `deepseek pr <N>` (#451) â€?fetch a GitHub PR via `gh`, format
+/// `deepseek pr <N>` (#451) ï¿½?fetch a GitHub PR via `gh`, format
 /// title + body + diff as the composer's first message, and launch
 /// the interactive TUI. Falls back gracefully if `gh` is missing.
 async fn run_pr(
@@ -2674,7 +2663,7 @@ async fn run_pr(
 ///
 /// Walks `$PATH` directly instead of probing with `--version`. The
 /// previous implementation invoked `Command::new(name).arg("--version")`,
-/// which fails on the Ubuntu CI runner because `/bin/sh` is `dash` â€?
+/// which fails on the Ubuntu CI runner because `/bin/sh` is `dash` ï¿½?
 /// `dash --version` exits with status 2 ("invalid option") even though
 /// `sh` is plainly on PATH. macOS happens to ship bash as `sh`, which
 /// does honor `--version`, so the bug was invisible locally and only
@@ -2694,7 +2683,7 @@ fn is_command_available(name: &str) -> bool {
         }
         #[cfg(windows)]
         {
-            // PATHEXT gives `.exe`/`.cmd`/`.bat` etc. priority â€?we only
+            // PATHEXT gives `.exe`/`.cmd`/`.bat` etc. priority ï¿½?we only
             // probe `.exe` because that's the case that actually trips
             // up the negative case (`gh` resolves as `gh.exe`).
             if candidate.extension().is_none() && candidate.with_extension("exe").is_file() {
@@ -2782,7 +2771,7 @@ fn run_gh_pr_checkout(number: u32, repo: Option<&str>) -> Result<()> {
 
 /// Format the PR review prompt that lands in the composer. Caps the
 /// diff at 200 KiB so a massive PR doesn't blow the model's context
-/// window before the user even hits Enter â€?they can always ask the
+/// window before the user even hits Enter ï¿½?they can always ask the
 /// model to fetch more via `gh pr diff #N` from inside the session.
 fn format_pr_prompt(number: u32, view: &GhPullRequest, diff: &str) -> String {
     const MAX_DIFF_BYTES: usize = 200 * 1024;
@@ -2810,13 +2799,13 @@ fn format_pr_prompt(number: u32, view: &GhPullRequest, diff: &str) -> String {
         view.title.trim().to_string()
     };
     let branches = match (view.base.is_empty(), view.head.is_empty()) {
-        (false, false) => format!("{} â†?{}", view.base, view.head),
+        (false, false) => format!("{} ï¿½?{}", view.base, view.head),
         (false, true) => view.base.clone(),
         (true, false) => view.head.clone(),
         _ => "(unknown)".to_string(),
     };
     format!(
-        "Review PR #{number} â€?{title}\n\
+        "Review PR #{number} ï¿½?{title}\n\
          \n\
          URL: {url}\n\
          Branches: {branches}\n\
@@ -3163,12 +3152,12 @@ enum McpServerDoctorStatus {
 
 /// Check an MCP server config entry for common issues.
 fn doctor_check_mcp_server(server: &McpServerConfig) -> McpServerDoctorStatus {
-    // No command or URL â€?incomplete entry.
+    // No command or URL ï¿½?incomplete entry.
     if server.command.is_none() && server.url.is_none() {
         return McpServerDoctorStatus::Error("no command or url configured".to_string());
     }
 
-    // URL-based server â€?just report the URL.
+    // URL-based server ï¿½?just report the URL.
     if let Some(ref url) = server.url {
         return McpServerDoctorStatus::Ok(format!("HTTP/SSE server at {url}"));
     }
@@ -3200,7 +3189,7 @@ fn doctor_check_mcp_server(server: &McpServerConfig) -> McpServerDoctorStatus {
             McpServerDoctorStatus::Ok(format!("self-hosted MCP server ({cmd} {args_str})"))
         } else {
             McpServerDoctorStatus::Warning(format!(
-                "self-hosted MCP server uses relative command \"{cmd}\" â€?consider using an absolute path"
+                "self-hosted MCP server uses relative command \"{cmd}\" ï¿½?consider using an absolute path"
             ))
         }
     } else {
@@ -3420,7 +3409,7 @@ fn try_recover_checkpoint() -> Option<String> {
     let mtime = metadata.modified().ok()?;
     let age = std::time::SystemTime::now().duration_since(mtime).ok()?;
     if age > std::time::Duration::from_secs(24 * 3600) {
-        // Stale checkpoint â€?clean it up.
+        // Stale checkpoint ï¿½?clean it up.
         let _ = manager.clear_checkpoint();
         return None;
     }
@@ -3505,10 +3494,10 @@ fn merge_project_config(config: &mut Config, workspace: &Path) {
 
     // #417: dangerous keys are denied at project scope. A malicious
     // `<workspace>/.deepseek/config.toml` could otherwise:
-    // * `api_key` / `base_url` / `provider` â€?exfiltrate prompts to a
+    // * `api_key` / `base_url` / `provider` ï¿½?exfiltrate prompts to a
     //   look-alike endpoint by swapping the user's credentials and
     //   target host with project-controlled values.
-    // * `mcp_config_path` â€?point the loader at an MCP config that
+    // * `mcp_config_path` ï¿½?point the loader at an MCP config that
     //   spawns arbitrary stdio servers under the user's identity.
     //
     // The overlay path is non-interactive; users can't visually
@@ -3520,7 +3509,7 @@ fn merge_project_config(config: &mut Config, workspace: &Path) {
     for key in DENY_AT_PROJECT_SCOPE {
         if table.contains_key(*key) {
             eprintln!(
-                "warning: project-scope config key `{key}` is ignored â€?\
+                "warning: project-scope config key `{key}` is ignored ï¿½?\
                  set it in `~/.deepseek/config.toml` instead. \
                  (See #417 for the deny-list rationale.)"
             );
@@ -3531,8 +3520,8 @@ fn merge_project_config(config: &mut Config, workspace: &Path) {
     // approval/sandbox tightening, notes path, reasoning effort).
     // Loosening *values* like `approval_policy = "auto"` and
     // `sandbox_mode = "danger-full-access"` are denied unconditionally
-    // â€?those are pure escalation regardless of the user's prior
-    // value. Sub-tightening comparisons (e.g. user `"never"` â†?
+    // ï¿½?those are pure escalation regardless of the user's prior
+    // value. Sub-tightening comparisons (e.g. user `"never"` ï¿½?
     // project `"on-request"`) stay v0.8.9 follow-up because they
     // need a richer ordering check.
     for (key, field) in [
@@ -3554,7 +3543,7 @@ fn merge_project_config(config: &mut Config, workspace: &Path) {
             );
             if is_escalation {
                 eprintln!(
-                    "warning: project-scope `{key} = \"{v}\"` is ignored â€?\
+                    "warning: project-scope `{key} = \"{v}\"` is ignored ï¿½?\
                      project config cannot escalate to the loosest value. \
                      (See #417.)"
                 );
@@ -3574,7 +3563,7 @@ fn merge_project_config(config: &mut Config, workspace: &Path) {
         config.allow_shell = Some(v);
     }
 
-    // #454: instructions array â€?project replaces user. Empty arrays
+    // #454: instructions array ï¿½?project replaces user. Empty arrays
     // count: explicit `instructions = []` clears the user's list for
     // this repo, useful when the user has a verbose global file that
     // doesn't apply to the current project. Non-string entries are
@@ -3648,7 +3637,7 @@ async fn run_interactive(
     // Prune stale tool-output spillover files (#422). Non-fatal: home
     // missing or directory unreadable just means nothing got pruned;
     // we never block startup. Runs unconditionally because the
-    // spillover store is created lazily on first write â€?there's no
+    // spillover store is created lazily on first write ï¿½?there's no
     // user-facing setting to gate.
     match deepseek_tui::tools::truncate::prune_older_than(deepseek_tui::tools::truncate::SPILLOVER_MAX_AGE) {
         Ok(0) => {}
@@ -4209,7 +4198,7 @@ model = "deepseek-v4-pro"
             config.sandbox_mode, None,
             "project-scope `sandbox_mode = \"danger-full-access\"` must be denied"
         );
-        // Non-escalation overrides on the same merge succeed â€?
+        // Non-escalation overrides on the same merge succeed ï¿½?
         // the deny is per-key, not per-file.
         assert_eq!(
             config.default_text_model.as_deref(),
@@ -4303,7 +4292,7 @@ max_subagents = -3
             ..Config::default()
         };
         merge_project_config(&mut config, tmp.path());
-        // Untouched on parse error â€?better to fall back to global than crash.
+        // Untouched on parse error ï¿½?better to fall back to global than crash.
         assert_eq!(config.provider.as_deref(), Some("deepseek"));
     }
 
@@ -4321,7 +4310,7 @@ model = ""
             ..Config::default()
         };
         merge_project_config(&mut config, tmp.path());
-        // Empty strings are ignored â€?they're rarely a deliberate override.
+        // Empty strings are ignored ï¿½?they're rarely a deliberate override.
         assert_eq!(config.provider.as_deref(), Some("deepseek"));
         assert_eq!(
             config.default_text_model.as_deref(),
@@ -4365,7 +4354,7 @@ instructions = []
             ..Config::default()
         };
         merge_project_config(&mut config, tmp.path());
-        // Explicit empty array clears the user list â€?project says
+        // Explicit empty array clears the user list ï¿½?project says
         // "this repo doesn't want any of those globals".
         assert_eq!(
             config.instructions.as_deref(),
@@ -4387,7 +4376,7 @@ provider = "deepseek"
             ..Config::default()
         };
         merge_project_config(&mut config, tmp.path());
-        // No `instructions` key in the project file â†?user list intact.
+        // No `instructions` key in the project file ï¿½?user list intact.
         assert_eq!(
             config.instructions.as_deref(),
             Some(user.as_slice()),
@@ -4792,9 +4781,9 @@ mod pr_prompt_tests {
     #[test]
     fn format_pr_prompt_includes_title_url_branches_body_and_diff() {
         let prompt = format_pr_prompt(123, &sample_pr(), "diff --git a/x b/x\n+y");
-        assert!(prompt.contains("Review PR #123 â€?Add cool feature"));
+        assert!(prompt.contains("Review PR #123 ï¿½?Add cool feature"));
         assert!(prompt.contains("URL: https://github.com/example/repo/pull/123"));
-        assert!(prompt.contains("Branches: main â†?feat/cool"));
+        assert!(prompt.contains("Branches: main ï¿½?feat/cool"));
         assert!(prompt.contains("Closes #99."));
         assert!(prompt.contains("- bullet a"));
         assert!(prompt.contains("```diff"));
@@ -4827,7 +4816,7 @@ mod pr_prompt_tests {
         let prompt = format_pr_prompt(1, &sample_pr(), &diff);
         assert!(prompt.contains("[â€¦diff truncated"));
         assert!(prompt.contains("at 200 KiB"));
-        // Ensure we didn't slice mid-codepoint â€?the result still
+        // Ensure we didn't slice mid-codepoint ï¿½?the result still
         // round-trips as valid UTF-8 (it's a String, so this is by
         // construction; the test pins behaviour against silent panics
         // if the cut logic regresses).
@@ -4844,7 +4833,7 @@ mod pr_prompt_tests {
         assert!(is_command_available("sh"), "POSIX `sh` should be on PATH");
 
         // A deliberately-implausible name to confirm the negative
-        // branch â€?`--version` on this would exec(3) â†?ENOENT.
+        // branch ï¿½?`--version` on this would exec(3) ï¿½?ENOENT.
         assert!(
             !is_command_available("this-command-cannot-exist-deepseek-tui-test-ENOENT-marker"),
             "missing command should return false, not panic"
