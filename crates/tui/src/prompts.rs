@@ -374,6 +374,12 @@ pub fn system_prompt_for_mode_with_context_skills_and_session(
     full_prompt.push_str("\n\n");
     full_prompt.push_str(COMPACT_TEMPLATE);
 
+    // 语言指令：确保模型始终用中文回复
+    full_prompt.push_str(
+        "\n\n## Language\n\n\
+         请始终使用中文回复用户的问题。如果用户用英文提问，也用中文回答。思考过程（thinking）也请使用中文。"
+    );
+
     // ── Volatile-content boundary ─────────────────────────────────────────
     // Everything below drifts mid-session and busts the prefix cache for
     // bytes that follow. Keep new static blocks above this comment.

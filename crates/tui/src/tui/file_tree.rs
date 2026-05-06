@@ -304,12 +304,12 @@ pub fn render_file_tree(f: &mut Frame, area: Rect, state: &mut FileTreeState) {
     if state.is_loading {
         lines.push(Line::from(Span::styled(
             "  Building file tree...",
-            Style::default().fg(palette::TEXT_MUTED),
+            Style::default().fg(palette::TEXT_SOFT),
         )));
     } else if state.entries.is_empty() {
         lines.push(Line::from(Span::styled(
             "  (empty)",
-            Style::default().fg(palette::TEXT_MUTED),
+            Style::default().fg(palette::TEXT_SOFT),
         )));
     } else {
         let render_end = (scroll + max_visible).min(state.entries.len());
@@ -343,7 +343,7 @@ pub fn render_file_tree(f: &mut Frame, area: Rect, state: &mut FileTreeState) {
                     .fg(palette::SELECTION_TEXT)
                     .bg(palette::SELECTION_BG)
             } else {
-                Style::default().fg(palette::TEXT_PRIMARY)
+                Style::default().fg(palette::TEXT_PRIMARY).bold()
             };
 
             lines.push(Line::from(Span::styled(display, style)));

@@ -6,6 +6,7 @@ members = [
     "crates/config",
     "crates/core",
     "crates/execpolicy",
+    "crates/gui",
     "crates/hooks",
     "crates/mcp",
     "crates/protocol",
@@ -15,7 +16,7 @@ members = [
     "crates/tui",
     "crates/tui-core",
 ]
-default-members = ["crates/cli", "crates/app-server", "crates/tui"]
+default-members = ["crates/cli", "crates/app-server", "crates/tui", "crates/gui"]
 resolver = "2"
 
 [workspace.package]

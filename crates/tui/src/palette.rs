@@ -13,7 +13,7 @@ pub const DEEPSEEK_SLATE_RGB: (u8, u8, u8) = (18, 28, 46);
 pub const DEEPSEEK_RED_RGB: (u8, u8, u8) = (226, 80, 96);
 
 // New semantic colors
-pub const BORDER_COLOR_RGB: (u8, u8, u8) = (42, 74, 127); // #2A4A7F
+pub const BORDER_COLOR_RGB: (u8, u8, u8) = (70, 110, 170); // #466EAA
 
 pub const DEEPSEEK_BLUE: Color = Color::Rgb(
     DEEPSEEK_BLUE_RGB.0,
