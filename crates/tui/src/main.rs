@@ -1095,7 +1095,7 @@ fn run_setup(config: &Config, workspace: &Path, args: SetupArgs) -> Result<()> {
         return run_setup_clean(&default_checkpoints_dir(), args.force);
     }
 
-    use palette;
+    use deepseek_tui::palette;
     use colored::Colorize;
 
     let (aqua_r, aqua_g, aqua_b) = palette::DEEPSEEK_SKY_RGB;
@@ -1112,7 +1112,7 @@ fn run_setup(config: &Config, workspace: &Path, args: SetupArgs) -> Result<()> {
         "DeepSeek Setup".truecolor(aqua_r, aqua_g, aqua_b).bold()
     );
     println!("{}", "==============".truecolor(sky_r, sky_g, sky_b));
-    println!("Workspace: {}", utils::display_path(workspace));
+    println!("Workspace: {}", deepseek_tui::utils::display_path(workspace));
 
     if run_mcp {
         let mcp_path = config.mcp_config_path();
@@ -1155,12 +1155,12 @@ fn run_setup(config: &Config, workspace: &Path, args: SetupArgs) -> Result<()> {
         if args.local {
             println!(
                 "    Local skills dir enabled for this workspace: {}",
-                utils::display_path(&skills_dir)
+                deepseek_tui::utils::display_path(&skills_dir)
             );
         } else {
             println!(
                 "    Skills dir: {}",
-                utils::display_path(&skills_dir)
+                deepseek_tui::utils::display_path(&skills_dir)
             );
         }
         println!("    Next: run the TUI and use `/skills` then `/skill getting-started`.");
@@ -1171,7 +1171,7 @@ fn run_setup(config: &Config, workspace: &Path, args: SetupArgs) -> Result<()> {
         let (dir, readme_status, example_status) = init_tools_dir(&tools_dir, args.force)?;
         report_write_status("Tools README", &dir.join("README.md"), readme_status);
         report_write_status("Example tool", &dir.join("example.sh"), example_status);
-        println!("    Tools dir: {}", utils::display_path(&dir));
+        println!("    Tools dir: {}", deepseek_tui::utils::display_path(&dir));
         println!("    Next: drop scripts here; surface them via skills/MCP when ready.");
     }
 
@@ -1183,12 +1183,12 @@ fn run_setup(config: &Config, workspace: &Path, args: SetupArgs) -> Result<()> {
         report_write_status("Example plugin", &example_path, example_status);
         println!(
             "    Plugins dir: {}",
-            utils::display_path(&plugins_dir)
+            deepseek_tui::utils::display_path(&plugins_dir)
         );
         println!("    Next: copy the example dir, edit PLUGIN.md, wire via skill/MCP.");
     }
 
-    let sandbox = sandbox::get_platform_sandbox();
+    let sandbox = deepseek_tui::sandbox::get_platform_sandbox();
     if let Some(kind) = sandbox {
         println!("  ✓ Sandbox available: {kind}");
     } else {
@@ -1252,11 +1252,11 @@ fn skills_count_for(dir: &Path) -> usize {
     if !dir.exists() {
         return 0;
     }
-    skills::SkillRegistry::discover(dir).len()
+    deepseek_tui::skills::SkillRegistry::discover(dir).len()
 }
 
 fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
-    use palette;
+    use deepseek_tui::palette;
     use colored::Colorize;
 
     let (aqua_r, aqua_g, aqua_b) = palette::DEEPSEEK_SKY_RGB;
@@ -1281,27 +1281,27 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
         ),
         ApiKeySource::Missing => {
             let (env_var, login_hint) = match config.api_provider() {
-                config::ApiProvider::NvidiaNim => (
+                deepseek_tui::config::ApiProvider::NvidiaNim => (
                     "NVIDIA_API_KEY",
                     "deepseek auth set --provider nvidia-nim --api-key \"...\"",
                 ),
-                config::ApiProvider::Openrouter => (
+                deepseek_tui::config::ApiProvider::Openrouter => (
                     "OPENROUTER_API_KEY",
                     "deepseek auth set --provider openrouter --api-key \"...\"",
                 ),
-                config::ApiProvider::Novita => (
+                deepseek_tui::config::ApiProvider::Novita => (
                     "NOVITA_API_KEY",
                     "deepseek auth set --provider novita --api-key \"...\"",
                 ),
-                config::ApiProvider::Fireworks => (
+                deepseek_tui::config::ApiProvider::Fireworks => (
                     "FIREWORKS_API_KEY",
                     "deepseek auth set --provider fireworks --api-key \"...\"",
                 ),
-                config::ApiProvider::Sglang => (
+                deepseek_tui::config::ApiProvider::Sglang => (
                     "SGLANG_API_KEY",
                     "deepseek auth set --provider sglang --api-key \"...\"",
                 ),
-                config::ApiProvider::Deepseek | config::ApiProvider::DeepseekCN => {
+                deepseek_tui::config::ApiProvider::Deepseek | deepseek_tui::config::ApiProvider::DeepseekCN => {
                     ("DEEPSEEK_API_KEY", "deepseek auth set --provider deepseek")
                 }
             };
@@ -1309,13 +1309,13 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
                 "  {} api_key: missing  (set {env_var} or `[providers.{}].api_key` in ~/.deepseek/config.toml; or run `{login_hint}`)",
                 "✗".truecolor(red_r, red_g, red_b),
                 match config.api_provider() {
-                    config::ApiProvider::NvidiaNim => "nvidia_nim",
-                    config::ApiProvider::Openrouter => "openrouter",
-                    config::ApiProvider::Novita => "novita",
-                    config::ApiProvider::Fireworks => "fireworks",
-                    config::ApiProvider::Sglang => "sglang",
-                    config::ApiProvider::Deepseek
-                    | config::ApiProvider::DeepseekCN => "deepseek",
+                    deepseek_tui::config::ApiProvider::NvidiaNim => "nvidia_nim",
+                    deepseek_tui::config::ApiProvider::Openrouter => "openrouter",
+                    deepseek_tui::config::ApiProvider::Novita => "novita",
+                    deepseek_tui::config::ApiProvider::Fireworks => "fireworks",
+                    deepseek_tui::config::ApiProvider::Sglang => "sglang",
+                    deepseek_tui::config::ApiProvider::Deepseek
+                    | deepseek_tui::config::ApiProvider::DeepseekCN => "deepseek",
                 }
             );
         }
@@ -1348,7 +1348,7 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
     println!(
         "  · skills: {} at {}",
         skills_count_for(&skills_dir),
-        utils::display_path(&skills_dir)
+        deepseek_tui::utils::display_path(&skills_dir)
     );
 
     let tools_dir = default_tools_dir();
@@ -1364,7 +1364,7 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
         } else {
             0
         },
-        utils::display_path(&tools_dir)
+        deepseek_tui::utils::display_path(&tools_dir)
     );
 
     let plugins_dir = default_plugins_dir();
@@ -1380,10 +1380,10 @@ fn run_setup_status(config: &Config, workspace: &Path) -> Result<()> {
         } else {
             0
         },
-        utils::display_path(&plugins_dir)
+        deepseek_tui::utils::display_path(&plugins_dir)
     );
 
-    let sandbox = sandbox::get_platform_sandbox();
+    let sandbox = deepseek_tui::sandbox::get_platform_sandbox();
     match sandbox {
         Some(kind) => println!(
             "  {} sandbox: {kind}",
@@ -1456,7 +1456,7 @@ fn run_setup_clean(checkpoints_dir: &Path, force: bool) -> Result<()> {
 
 /// Run system diagnostics
 async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Option<&Path>) {
-    use palette;
+    use deepseek_tui::palette;
     use colored::Colorize;
 
     let (blue_r, blue_g, blue_b) = palette::DEEPSEEK_BLUE_RGB;
@@ -1496,16 +1496,16 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         println!(
             "  {} config.toml found at {}",
             "✓".truecolor(aqua_r, aqua_g, aqua_b),
-            utils::display_path(&config_path)
+            deepseek_tui::utils::display_path(&config_path)
         );
     } else {
         println!(
             "  {} config.toml not found at {} (using defaults/env)",
             "!".truecolor(sky_r, sky_g, sky_b),
-            utils::display_path(&config_path)
+            deepseek_tui::utils::display_path(&config_path)
         );
     }
-    println!("  workspace: {}", utils::display_path(workspace));
+    println!("  workspace: {}", deepseek_tui::utils::display_path(workspace));
 
     // Check API keys
     println!();
@@ -1515,32 +1515,32 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     // Keep doctor/status prompt-free even for unsigned rebuilt binaries.
     for (provider, slot, env_names) in [
         (
-            config::ApiProvider::Deepseek,
+            deepseek_tui::config::ApiProvider::Deepseek,
             "deepseek",
             &["DEEPSEEK_API_KEY"][..],
         ),
         (
-            config::ApiProvider::NvidiaNim,
+            deepseek_tui::config::ApiProvider::NvidiaNim,
             "nvidia-nim",
             &["NVIDIA_API_KEY", "NVIDIA_NIM_API_KEY"][..],
         ),
         (
-            config::ApiProvider::Openrouter,
+            deepseek_tui::config::ApiProvider::Openrouter,
             "openrouter",
             &["OPENROUTER_API_KEY"][..],
         ),
         (
-            config::ApiProvider::Novita,
+            deepseek_tui::config::ApiProvider::Novita,
             "novita",
             &["NOVITA_API_KEY"][..],
         ),
         (
-            config::ApiProvider::Fireworks,
+            deepseek_tui::config::ApiProvider::Fireworks,
             "fireworks",
             &["FIREWORKS_API_KEY"][..],
         ),
         (
-            config::ApiProvider::Sglang,
+            deepseek_tui::config::ApiProvider::Sglang,
             "sglang",
             &["SGLANG_API_KEY"][..],
         ),
@@ -1555,7 +1555,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
             .provider_config_for(provider)
             .and_then(|entry| entry.api_key.as_ref())
             .is_some_and(|v| !v.trim().is_empty())
-            || (matches!(provider, config::ApiProvider::Deepseek)
+            || (matches!(provider, deepseek_tui::config::ApiProvider::Deepseek)
                 && config
                     .api_key
                     .as_ref()
@@ -1708,7 +1708,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         println!(
             "  {} MCP config found at {}",
             "✓".truecolor(aqua_r, aqua_g, aqua_b),
-            utils::display_path(&mcp_config_path)
+            deepseek_tui::utils::display_path(&mcp_config_path)
         );
         match load_mcp_config(&mcp_config_path) {
             Ok(cfg) if cfg.servers.is_empty() => {
@@ -1763,7 +1763,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         println!(
             "  {} MCP config not found at {}",
             "·".dimmed(),
-            utils::display_path(&mcp_config_path)
+            deepseek_tui::utils::display_path(&mcp_config_path)
         );
         println!("    Run `deepseek mcp init` or `deepseek setup --mcp`.");
     }
@@ -1798,14 +1798,14 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         println!(
             "  {} local skills dir found at {} ({} items)",
             "✓".truecolor(aqua_r, aqua_g, aqua_b),
-            utils::display_path(&local_skills_dir),
+            deepseek_tui::utils::display_path(&local_skills_dir),
             describe_dir(&local_skills_dir)
         );
     } else {
         println!(
             "  {} local skills dir not found at {}",
             "·".dimmed(),
-            utils::display_path(&local_skills_dir)
+            deepseek_tui::utils::display_path(&local_skills_dir)
         );
     }
 
@@ -1813,14 +1813,14 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         println!(
             "  {} .agents skills dir found at {} ({} items)",
             "✓".truecolor(aqua_r, aqua_g, aqua_b),
-            utils::display_path(&agents_skills_dir),
+            deepseek_tui::utils::display_path(&agents_skills_dir),
             describe_dir(&agents_skills_dir)
         );
     } else {
         println!(
             "  {} .agents skills dir not found at {}",
             "·".dimmed(),
-            utils::display_path(&agents_skills_dir)
+            deepseek_tui::utils::display_path(&agents_skills_dir)
         );
     }
 
@@ -1828,25 +1828,25 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         println!(
             "  {} global skills dir found at {} ({} items)",
             "✓".truecolor(aqua_r, aqua_g, aqua_b),
-            utils::display_path(&global_skills_dir),
+            deepseek_tui::utils::display_path(&global_skills_dir),
             describe_dir(&global_skills_dir)
         );
     } else {
         println!(
             "  {} global skills dir not found at {}",
             "·".dimmed(),
-            utils::display_path(&global_skills_dir)
+            deepseek_tui::utils::display_path(&global_skills_dir)
         );
     }
 
-    // #432: only print interop dirs when they're populated —empty
+    // #432: only print interop dirs when they're populated �?empty
     // .opencode/.claude folders are common and would just clutter
     // the report with false-positive "absent" lines.
     if opencode_skills_dir.exists() {
         println!(
             "  {} .opencode skills dir found at {} ({} items)",
             "✓".truecolor(aqua_r, aqua_g, aqua_b),
-            utils::display_path(&opencode_skills_dir),
+            deepseek_tui::utils::display_path(&opencode_skills_dir),
             describe_dir(&opencode_skills_dir)
         );
     }
@@ -1854,7 +1854,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         println!(
             "  {} .claude skills dir found at {} ({} items)",
             "✓".truecolor(aqua_r, aqua_g, aqua_b),
-            utils::display_path(&claude_skills_dir),
+            deepseek_tui::utils::display_path(&claude_skills_dir),
             describe_dir(&claude_skills_dir)
         );
     }
@@ -1862,7 +1862,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     println!(
         "  {} selected skills dir: {}",
         "·".dimmed(),
-        utils::display_path(selected_skills_dir)
+        deepseek_tui::utils::display_path(selected_skills_dir)
     );
     if !agents_skills_dir.exists() && !local_skills_dir.exists() && !global_skills_dir.exists() {
         println!("    Run `deepseek setup --skills` (or add --local for ./skills).");
@@ -1877,14 +1877,14 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         println!(
             "  {} tools dir found at {} ({} items)",
             "✓".truecolor(aqua_r, aqua_g, aqua_b),
-            utils::display_path(&tools_dir),
+            deepseek_tui::utils::display_path(&tools_dir),
             count
         );
     } else {
         println!(
             "  {} tools dir not found at {}",
             "·".dimmed(),
-            utils::display_path(&tools_dir)
+            deepseek_tui::utils::display_path(&tools_dir)
         );
         println!("    Run `deepseek-tui setup --tools` to scaffold a starter dir.");
     }
@@ -1898,14 +1898,14 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
         println!(
             "  {} plugins dir found at {} ({} items)",
             "✓".truecolor(aqua_r, aqua_g, aqua_b),
-            utils::display_path(&plugins_dir),
+            deepseek_tui::utils::display_path(&plugins_dir),
             count
         );
     } else {
         println!(
             "  {} plugins dir not found at {}",
             "·".dimmed(),
-            utils::display_path(&plugins_dir)
+            deepseek_tui::utils::display_path(&plugins_dir)
         );
         println!("    Run `deepseek-tui setup --plugins` to scaffold a starter dir.");
     }
@@ -1913,7 +1913,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     // Storage surfaces (#422 / #440 / #500)
     println!();
     println!("{}", "Storage:".bold());
-    if let Some(spillover_root) = tools::truncate::spillover_root() {
+    if let Some(spillover_root) = deepseek_tui::tools::truncate::spillover_root() {
         let (present, count) = if spillover_root.is_dir() {
             (true, count_dir_entries(&spillover_root))
         } else {
@@ -1923,7 +1923,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
             println!(
                 "  {} tool-output spillover at {} ({} file{})",
                 "✓".truecolor(aqua_r, aqua_g, aqua_b),
-                utils::display_path(&spillover_root),
+                deepseek_tui::utils::display_path(&spillover_root),
                 count,
                 if count == 1 { "" } else { "s" }
             );
@@ -1931,18 +1931,18 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
             println!(
                 "  {} tool-output spillover dir not yet created at {}",
                 "·".dimmed(),
-                utils::display_path(&spillover_root)
+                deepseek_tui::utils::display_path(&spillover_root)
             );
         }
     }
     let stash_path = dirs::home_dir().map(|h| h.join(".deepseek").join("composer_stash.jsonl"));
     if let Some(stash_path) = stash_path {
-        let stash_count = composer_stash::load_stash().len();
+        let stash_count = deepseek_tui::composer_stash::load_stash().len();
         if stash_path.exists() {
             println!(
                 "  {} composer stash at {} ({} parked draft{})",
                 "✓".truecolor(aqua_r, aqua_g, aqua_b),
-                utils::display_path(&stash_path),
+                deepseek_tui::utils::display_path(&stash_path),
                 stash_count,
                 if stash_count == 1 { "" } else { "s" }
             );
@@ -1960,7 +1960,7 @@ async fn run_doctor(config: &Config, workspace: &Path, config_path_override: Opt
     println!("  OS: {}", std::env::consts::OS);
     println!("  Arch: {}", std::env::consts::ARCH);
 
-    let sandbox = sandbox::get_platform_sandbox();
+    let sandbox = deepseek_tui::sandbox::get_platform_sandbox();
     if let Some(kind) = sandbox {
         println!(
             "  {} sandbox available: {}",
@@ -2149,12 +2149,12 @@ fn run_doctor_json(
         },
         "storage": {
             "spillover": {
-                "path": tools::truncate::spillover_root()
+                "path": deepseek_tui::tools::truncate::spillover_root()
                     .map(|p| p.display().to_string())
                     .unwrap_or_default(),
-                "present": tools::truncate::spillover_root()
+                "present": deepseek_tui::tools::truncate::spillover_root()
                     .is_some_and(|p| p.is_dir()),
-                "count": tools::truncate::spillover_root()
+                "count": deepseek_tui::tools::truncate::spillover_root()
                     .filter(|p| p.is_dir())
                     .map(|p| count_dir_entries(&p))
                     .unwrap_or(0),
@@ -2166,10 +2166,10 @@ fn run_doctor_json(
                 "present": dirs::home_dir()
                     .map(|h| h.join(".deepseek").join("composer_stash.jsonl"))
                     .is_some_and(|p| p.exists()),
-                "count": composer_stash::load_stash().len(),
+                "count": deepseek_tui::composer_stash::load_stash().len(),
             },
         },
-        "sandbox": match sandbox::get_platform_sandbox() {
+        "sandbox": match deepseek_tui::sandbox::get_platform_sandbox() {
             Some(kind) => json!({"available": true, "kind": kind.to_string()}),
             None => json!({"available": false, "kind": null}),
         },
@@ -2228,7 +2228,7 @@ fn run_features_command(config: &Config, command: FeaturesCli) -> Result<()> {
 }
 
 async fn run_models(config: &Config, args: ModelsArgs) -> Result<()> {
-    use client::DeepSeekClient;
+    use deepseek_tui::client::DeepSeekClient;
 
     let client = DeepSeekClient::new(config)?;
     let mut models = client.list_models().await?;
@@ -2261,8 +2261,8 @@ async fn run_models(config: &Config, args: ModelsArgs) -> Result<()> {
 
 /// Test API connectivity by making a minimal request
 async fn test_api_connectivity(config: &Config) -> Result<String> {
-    use client::DeepSeekClient;
-    use models::{ContentBlock, Message, MessageRequest};
+    use deepseek_tui::client::DeepSeekClient;
+    use deepseek_tui::models::{ContentBlock, Message, MessageRequest};
 
     let client = DeepSeekClient::new(config)?;
     let model = client.model().to_string();
@@ -2310,7 +2310,7 @@ fn rustc_version() -> String {
 
 /// List saved sessions
 fn list_sessions(limit: usize, search: Option<String>) -> Result<()> {
-    use palette;
+    use deepseek_tui::palette;
     use colored::Colorize;
     use session_manager::{SessionManager, format_session_line};
 
@@ -2376,7 +2376,7 @@ fn list_sessions(limit: usize, search: Option<String>) -> Result<()> {
 
 /// Initialize a new project with AGENTS.md
 fn init_project() -> Result<()> {
-    use palette;
+    use deepseek_tui::palette;
     use colored::Colorize;
     use project_context::create_default_agents_md;
 
@@ -2532,7 +2532,7 @@ fn pick_session_id() -> Result<String> {
 }
 
 async fn run_review(config: &Config, args: ReviewArgs) -> Result<()> {
-    use client::DeepSeekClient;
+    use deepseek_tui::client::DeepSeekClient;
 
     let diff = collect_diff(&args)?;
     if diff.trim().is_empty() {
@@ -2829,7 +2829,7 @@ fn collect_diff(args: &ReviewArgs) -> Result<String> {
     }
     let mut diff = String::from_utf8_lossy(&output.stdout).to_string();
     if diff.len() > args.max_chars {
-        diff = utils::truncate_with_ellipsis(&diff, args.max_chars, "\n...[truncated]\n");
+        diff = deepseek_tui::utils::truncate_with_ellipsis(&diff, args.max_chars, "\n...[truncated]\n");
     }
     Ok(diff)
 }
@@ -3192,13 +3192,13 @@ fn save_mcp_config(path: &Path, cfg: &McpConfig) -> Result<()> {
     }
     let rendered = serde_json::to_string_pretty(cfg)
         .map_err(|e| anyhow!("Failed to serialize MCP config: {e}"))?;
-    utils::write_atomic(path, rendered.as_bytes())
+    deepseek_tui::utils::write_atomic(path, rendered.as_bytes())
         .map_err(|e| anyhow!("Failed to write MCP config {}: {}", path.display(), e))?;
     Ok(())
 }
 
 fn run_sandbox_command(args: SandboxArgs) -> Result<()> {
-    use sandbox::{CommandSpec, SandboxManager};
+    use deepseek_tui::sandbox::{CommandSpec, SandboxManager};
 
     let SandboxCommand::Run {
         policy,
@@ -3302,8 +3302,8 @@ fn parse_sandbox_policy(
     writable_root: Vec<PathBuf>,
     exclude_tmpdir: bool,
     exclude_slash_tmp: bool,
-) -> Result<sandbox::SandboxPolicy> {
-    use sandbox::SandboxPolicy;
+) -> Result<deepseek_tui::sandbox::SandboxPolicy> {
+    use deepseek_tui::sandbox::SandboxPolicy;
 
     match policy {
         "danger-full-access" => Ok(SandboxPolicy::DangerFullAccess),
@@ -3537,7 +3537,7 @@ fn merge_project_config(config: &mut Config, workspace: &Path) {
     if let Some(v) = table.get("max_subagents").and_then(toml::Value::as_integer)
         && v > 0
     {
-        config.max_subagents = Some((v as usize).clamp(1, config::MAX_SUBAGENTS));
+        config.max_subagents = Some((v as usize).clamp(1, deepseek_tui::config::MAX_SUBAGENTS));
     }
     if let Some(v) = table.get("allow_shell").and_then(toml::Value::as_bool) {
         config.allow_shell = Some(v);
@@ -3595,14 +3595,14 @@ async fn run_interactive(
     );
     let use_alt_screen = should_use_alt_screen(cli, config);
     let use_mouse_capture = should_use_mouse_capture(cli, config, use_alt_screen);
-    let use_bracketed_paste = settings::Settings::load()
+    let use_bracketed_paste = deepseek_tui::settings::Settings::load()
         .map(|s| s.bracketed_paste)
         .unwrap_or(true);
 
     // Auto-install bundled system skills (e.g. skill-creator) on first launch.
     // Errors are non-fatal: log a warning and continue.
     let skills_dir = config.skills_dir();
-    if let Err(e) = skills::install_system_skills(&skills_dir) {
+    if let Err(e) = deepseek_tui::skills::install_system_skills(&skills_dir) {
         logging::warn(format!("Failed to install system skills: {e}"));
     }
 
@@ -3619,7 +3619,7 @@ async fn run_interactive(
     // we never block startup. Runs unconditionally because the
     // spillover store is created lazily on first write —there's no
     // user-facing setting to gate.
-    match tools::truncate::prune_older_than(tools::truncate::SPILLOVER_MAX_AGE) {
+    match deepseek_tui::tools::truncate::prune_older_than(deepseek_tui::tools::truncate::SPILLOVER_MAX_AGE) {
         Ok(0) => {}
         Ok(n) => tracing::debug!(
             target: "spillover",
@@ -3660,8 +3660,8 @@ async fn run_interactive(
 }
 
 async fn run_one_shot(config: &Config, model: &str, prompt: &str) -> Result<()> {
-    use client::DeepSeekClient;
-    use models::{ContentBlock, Message, MessageRequest};
+    use deepseek_tui::client::DeepSeekClient;
+    use deepseek_tui::models::{ContentBlock, Message, MessageRequest};
 
     let client = DeepSeekClient::new(config)?;
 
@@ -3698,8 +3698,8 @@ async fn run_one_shot(config: &Config, model: &str, prompt: &str) -> Result<()> 
 }
 
 async fn run_one_shot_json(config: &Config, model: &str, prompt: &str) -> Result<()> {
-    use client::DeepSeekClient;
-    use models::{ContentBlock, Message, MessageRequest, SystemPrompt};
+    use deepseek_tui::client::DeepSeekClient;
+    use deepseek_tui::models::{ContentBlock, Message, MessageRequest, SystemPrompt};
 
     let client = DeepSeekClient::new(config)?;
     let request = MessageRequest {
@@ -3755,14 +3755,14 @@ async fn run_exec_agent(
     trust_mode: bool,
     json_output: bool,
 ) -> Result<()> {
-    use compaction::CompactionConfig;
-    use core::engine::{EngineConfig, spawn_engine};
-    use core::events::Event;
-    use core::ops::Op;
-    use models::compaction_threshold_for_model;
-    use tools::plan::new_shared_plan_state;
-    use tools::todo::new_shared_todo_list;
-    use tui::app::AppMode;
+    use deepseek_tui::compaction::CompactionConfig;
+    use deepseek_tui::core::engine::{EngineConfig, spawn_engine};
+    use deepseek_tui::core::events::Event;
+    use deepseek_tui::core::ops::Op;
+    use deepseek_tui::models::compaction_threshold_for_model;
+    use deepseek_tui::tools::plan::new_shared_plan_state;
+    use deepseek_tui::tools::todo::new_shared_todo_list;
+    use deepseek_tui::tui::app::AppMode;
 
     // Compaction defaults to disabled in v0.6.6: the checkpoint-restart cycle
     // architecture (issue #124) handles long-context resets via fresh contexts
@@ -3777,13 +3777,13 @@ async fn run_exec_agent(
     };
 
     let network_policy = config.network.clone().map(|toml_cfg| {
-        network_policy::NetworkPolicyDecider::with_default_audit(toml_cfg.into_runtime())
+        deepseek_tui::network_policy::NetworkPolicyDecider::with_default_audit(toml_cfg.into_runtime())
     });
 
     let lsp_config = config
         .lsp
         .clone()
-        .map(config::LspConfigToml::into_runtime);
+        .map(deepseek_tui::config::LspConfigToml::into_runtime);
 
     let engine_config = EngineConfig {
         model: model.to_string(),
@@ -3798,15 +3798,15 @@ async fn run_exec_agent(
         max_subagents,
         features: config.features(),
         compaction,
-        cycle: cycle_manager::CycleConfig::default(),
-        capacity: core::capacity::CapacityControllerConfig::from_app_config(config),
+        cycle: deepseek_tui::cycle_manager::CycleConfig::default(),
+        capacity: deepseek_tui::core::capacity::CapacityControllerConfig::from_app_config(config),
         todos: new_shared_todo_list(),
         plan_state: new_shared_plan_state(),
-        max_spawn_depth: tools::subagent::DEFAULT_MAX_SPAWN_DEPTH,
+        max_spawn_depth: deepseek_tui::tools::subagent::DEFAULT_MAX_SPAWN_DEPTH,
         network_policy,
         snapshots_enabled: config.snapshots_config().enabled,
         lsp_config,
-        runtime_services: tools::spec::RuntimeToolServices::default(),
+        runtime_services: deepseek_tui::tools::spec::RuntimeToolServices::default(),
         subagent_model_overrides: config.subagent_model_overrides(),
         memory_enabled: config.memory_enabled(),
         memory_path: config.memory_path(),
@@ -3952,7 +3952,7 @@ async fn run_exec_agent(
             } => {
                 if auto_approve {
                     eprintln!("sandbox denied {tool_name}: {denial_reason} (auto-elevating)");
-                    let policy = sandbox::SandboxPolicy::DangerFullAccess;
+                    let policy = deepseek_tui::sandbox::SandboxPolicy::DangerFullAccess;
                     let _ = engine_handle.retry_tool_with_policy(tool_id, policy).await;
                 } else {
                     eprintln!("sandbox denied {tool_name}: {denial_reason}");
@@ -4014,7 +4014,7 @@ mod terminal_mode_tests {
     fn config_can_disable_default_mouse_capture() {
         let cli = parse_cli(&["deepseek"]);
         let config = Config {
-            tui: Some(config::TuiConfig {
+            tui: Some(deepseek_tui::config::TuiConfig {
                 alternate_screen: None,
                 mouse_capture: Some(false),
                 terminal_probe_timeout_ms: None,
@@ -4039,7 +4039,7 @@ mod terminal_mode_tests {
     fn config_can_enable_mouse_capture() {
         let cli = parse_cli(&["deepseek"]);
         let config = Config {
-            tui: Some(config::TuiConfig {
+            tui: Some(deepseek_tui::config::TuiConfig {
                 alternate_screen: None,
                 mouse_capture: Some(true),
                 terminal_probe_timeout_ms: None,
@@ -4235,7 +4235,7 @@ max_subagents = 500
         merge_project_config(&mut config, tmp.path());
         assert_eq!(
             config.max_subagents,
-            Some(config::MAX_SUBAGENTS),
+            Some(deepseek_tui::config::MAX_SUBAGENTS),
             "should clamp to MAX_SUBAGENTS"
         );
     }
